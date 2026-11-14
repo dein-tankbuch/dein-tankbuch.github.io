@@ -154,9 +154,17 @@ input:disabled{opacity:.55}
 .banner .btn{min-height:40px;padding:8px 14px;font-size:14px}
 .intro p{margin:0;max-width:62ch}
 .install p{margin:0;max-width:62ch}
-.install .schritte{display:flex;flex-direction:column;gap:8px}
-.install h3{margin:0;font-size:15px;font-weight:600}
-.install ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;max-width:62ch}
+.install .spalten{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+@media (min-width:560px){.install .spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.install .schritte{display:flex;flex-direction:column;gap:0;min-width:0}
+.install h3{margin:0 0 6px;font-size:15px;font-weight:700}
+.install details{border-top:1px solid var(--line);padding:2px 0}
+.install details:last-of-type{border-bottom:1px solid var(--line)}
+.install summary{cursor:pointer;font-weight:600;font-size:15px;min-height:42px;display:flex;align-items:center}
+.install summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.install ol{margin:0 0 10px;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;max-width:62ch}
+.install details .hint{margin:0 0 10px}
+.install .schritte > .hint{margin-top:10px}
 .daten p{margin:0}
 .daten .wichtig{font-size:15px;color:var(--ink);max-width:62ch}
 .vh{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
@@ -207,23 +215,78 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
     <h2 class="eyebrow" id="h-install">Als App auf den Home-Bildschirm</h2>
     <p>Mit dem Symbol auf dem Home-Bildschirm öffnest du das Tankbuch wie eine App, auch ohne Netz. Auf dem iPhone schützt das außerdem deine Einträge: Safari löscht die Daten einer Seite, die du an sieben Tagen Safari-Nutzung nicht öffnest. Die App auf dem Home-Bildschirm ist davon ausgenommen.</p>
     <div class="actions" id="install-knopf" hidden><button type="button" class="btn primary" id="install-btn">App installieren</button></div>
-    <div class="schritte" id="install-ios">
-      <h3>iPhone und iPad</h3>
-      <ol>
-        <li>Öffne diese Seite in Safari.</li>
-        <li>Tippe auf das Teilen-Symbol, das Quadrat mit dem Pfeil nach oben. In neueren iOS-Versionen liegt es hinter „•••“.</li>
-        <li>Wähle „Zum Home-Bildschirm“. Falls du es nicht siehst, scrolle im Menü nach unten.</li>
-        <li>Tippe auf „Hinzufügen“. Das Tankbuch-Symbol liegt jetzt auf deinem Home-Bildschirm.</li>
-      </ol>
-      <p class="hint">Öffne das Tankbuch danach nur noch über das Symbol. Die App hat einen eigenen Speicher, Einträge aus Safari nimmst du per Export und Import mit.</p>
-    </div>
-    <div class="schritte" id="install-android">
-      <h3>Android</h3>
-      <ol>
-        <li>Öffne diese Seite in Chrome.</li>
-        <li>Tippe oben rechts auf das Menü ⋮.</li>
-        <li>Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“ und bestätige.</li>
-      </ol>
+    <div class="spalten">
+      <div class="schritte" id="install-ios">
+        <h3>iPhone und iPad</h3>
+        <details data-browser="safari">
+          <summary>Safari</summary>
+          <ol>
+            <li>Öffne „Teilen“ auf einem von zwei Wegen: Tippe in der Adressleiste auf das Symbol mit den drei Strichen und dann auf „Teilen“. Oder halte den Finger etwas länger auf die Adressleiste und tippe auf „Teilen“.</li>
+            <li>Wähle „Zum Home-Bildschirm“. Falls du es nicht siehst, scrolle im Menü nach unten.</li>
+            <li>Lass „Als Web-App öffnen“ eingeschaltet und tippe auf „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <details data-browser="chrome-ios">
+          <summary>Chrome</summary>
+          <ol>
+            <li>Tippe in der Adressleiste auf das Teilen-Symbol, das Quadrat mit dem Pfeil nach oben.</li>
+            <li>Wähle „Zum Home-Bildschirm“, dafür notfalls im Menü nach unten scrollen.</li>
+            <li>Tippe auf „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <details data-browser="firefox-ios">
+          <summary>Firefox</summary>
+          <ol>
+            <li>Tippe in der Adressleiste auf das Teilen-Symbol.</li>
+            <li>Wähle „Zum Home-Bildschirm“ und tippe auf „Hinzufügen“.</li>
+          </ol>
+          <p class="hint">Fehlt der Punkt in deiner Version, nimm Safari.</p>
+        </details>
+        <details data-browser="edge-ios">
+          <summary>Edge</summary>
+          <ol>
+            <li>Tippe auf das Teilen-Symbol oder im Menü „•••“ auf „Teilen“.</li>
+            <li>Wähle „Zum Home-Bildschirm“ und tippe auf „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <p class="hint">Öffne das Tankbuch danach nur noch über das Symbol. Die App hat einen eigenen Speicher, Einträge aus dem Browser nimmst du per Export und Import mit.</p>
+      </div>
+      <div class="schritte" id="install-android">
+        <h3>Android</h3>
+        <details data-browser="chrome">
+          <summary>Chrome</summary>
+          <ol>
+            <li>Tippe oben rechts auf das Menü ⋮.</li>
+            <li>Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.</li>
+            <li>Bestätige mit „Installieren“ oder „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <details data-browser="samsung">
+          <summary>Samsung Internet</summary>
+          <ol>
+            <li>Tippe unten rechts auf das Menü mit den drei Strichen.</li>
+            <li>Wähle „Seite hinzufügen zu“ und dann „Startbildschirm“.</li>
+            <li>Tippe auf „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <details data-browser="firefox">
+          <summary>Firefox</summary>
+          <ol>
+            <li>Tippe auf das Menü ⋮.</li>
+            <li>Wähle „Installieren“ oder „Zum Startbildschirm hinzufügen“.</li>
+            <li>Bestätige mit „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <details data-browser="edge">
+          <summary>Edge</summary>
+          <ol>
+            <li>Tippe unten auf das Menü „•••“.</li>
+            <li>Wähle „Zum Telefon hinzufügen“ oder „Zum Startbildschirm hinzufügen“.</li>
+            <li>Bestätige mit „Installieren“ oder „Hinzufügen“.</li>
+          </ol>
+        </details>
+        <p class="hint">Je nach Version heißen die Menüpunkte leicht anders. Ein Symbol oder ein Hinweis „Installieren“ in der Adressleiste führt ebenfalls ans Ziel.</p>
+      </div>
     </div>
     <div class="actions"><button type="button" class="btn" id="install-spaeter">Später</button></div>
   </section>
@@ -771,11 +834,21 @@ function istIOS() { const ua = navigator.userAgent || ''; return /iPad|iPhone|iP
 function istAndroid() { return /Android/i.test(navigator.userAgent || ''); }
 function istStandalone() { return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
 let installEvent = null, installZeigen = false;
+function browserKennung() {
+  const ua = navigator.userAgent || '';
+  if (istIOS()) return /CriOS/.test(ua) ? 'chrome-ios' : /FxiOS/.test(ua) ? 'firefox-ios' : /EdgiOS/.test(ua) ? 'edge-ios' : 'safari';
+  if (istAndroid()) return /SamsungBrowser/.test(ua) ? 'samsung' : /Firefox/.test(ua) ? 'firefox' : /EdgA/.test(ua) ? 'edge' : 'chrome';
+  return '';
+}
+function oeffneEigenenBrowser() {
+  const k = browserKennung();
+  const d = k && document.querySelector('#install details[data-browser="' + k + '"]');
+  if (d) d.open = true;
+}
 function renderInstall() {
   const ios = istIOS(), android = istAndroid(), app = istStandalone();
   $('install').hidden = app || (!!daten.meta.installAus && !installZeigen);
-  $('install-ios').hidden = android;
-  $('install-android').hidden = ios;
+  $('install-android').style.order = android ? '-1' : '';
   $('install-knopf').hidden = !installEvent;
   $('install-hilfe-zeile').hidden = app;
   $('install-stand').textContent = app
@@ -1376,6 +1449,7 @@ function start() {
     if (s && s.datum === heute() && Number.isFinite(s.km)) { jetztKm = s.km; $('jetzt').value = String(s.km); }
   } catch (err) { jetztKm = null; }
   lade();
+  oeffneEigenenBrowser();
   render();
   persistStand();
   if (document.readyState === 'complete') registriereSW(); else window.addEventListener('load', registriereSW);
