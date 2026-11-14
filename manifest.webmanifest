@@ -1,0 +1,17 @@
+{
+  "name": "Tankbuch",
+  "short_name": "Tankbuch",
+  "description": "Tankstopps eintragen, Verbrauch von Reserve zu Reserve messen und sehen, wann die Reservelampe angeht. Ohne Konto, die Daten bleiben auf dem Gerät.",
+  "lang": "de-DE",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e8ebed",
+  "theme_color": "#e8ebed",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

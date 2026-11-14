@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tankbuch</title>
+<meta name="description" content="Tankstopps eintragen, Verbrauch von Reserve zu Reserve messen und sehen, wann die Reservelampe angeht. Ohne Konto, die Daten bleiben auf deinem Gerät.">
+<meta name="theme-color" content="#e8ebed" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1113" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tankbuch">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style>
+/* Schriften lokal, keine Anfrage an Google Fonts. Barlow und Barlow Condensed, SIL Open Font License (fonts/OFL.txt). */
+@font-face{font-family:"Barlow";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/barlow-400.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/barlow-500.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-600.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-600.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-700.woff2) format("woff2")}
+</style>
+<style>
+/* Layout: Instrument zuerst. Oben die Strecke bis zur nächsten Tanklampe, darunter Kennzahlen, Eintragen und Verlauf in einer Spalte (max. 620px). */
+:root{
+  --bg:#e8ebed;
+  --surface:#ffffff;
+  --ink:#161b1f;
+  --muted:#59636b;
+  --line:#d0d6da;
+  --track:#dce1e4;
+  --amber:#9a5b00;
+  --lamp:#f2a000;
+  --lamp-soft:rgba(242,160,0,.22);
+  --lamp-line:rgba(242,160,0,.7);
+  --good:#1d6b3f;
+  --danger:#b3261e;
+  --shadow:0 1px 2px rgba(22,27,31,.12);
+  --font-display:"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif;
+  --font-body:"Barlow","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1113;--surface:#161a1d;--ink:#e7ebee;--muted:#8e99a1;--line:#283036;--track:#242b30;
+    --amber:#ffb22e;--lamp:#ffb22e;--lamp-soft:rgba(255,178,46,.16);--lamp-line:rgba(255,178,46,.55);
+    --good:#7fd4a0;--danger:#ff8a80;--shadow:0 1px 2px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1113;--surface:#161a1d;--ink:#e7ebee;--muted:#8e99a1;--line:#283036;--track:#242b30;
+  --amber:#ffb22e;--lamp:#ffb22e;--lamp-soft:rgba(255,178,46,.16);--lamp-line:rgba(255,178,46,.55);
+  --good:#7fd4a0;--danger:#ff8a80;--shadow:0 1px 2px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.wrap{max-width:620px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:30px}
+section{display:flex;flex-direction:column;gap:12px;min-width:0}
+h1{margin:0;font-family:var(--font-display);font-weight:700;font-size:32px;line-height:1;letter-spacing:.005em;display:flex;align-items:center;gap:8px;text-wrap:balance}
+h1 .ico{color:var(--amber);width:26px;height:26px}
+.meta{margin:6px 0 0;color:var(--muted);font-size:14px}
+.eyebrow{margin:0;font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.ico{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-.18em}
+sup{font-size:.6em;line-height:0;vertical-align:.62em;margin-left:.04em}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px}
+.status{margin:0;padding:10px 12px;border-radius:10px;background:var(--lamp-soft);color:var(--ink);font-size:14px}
+
+/* Anzeige bis zur Lampe */
+.hero{gap:0}
+.big{margin:8px 0 2px;font-family:var(--font-display);font-weight:700;font-size:clamp(44px,14vw,64px);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.big small{font-size:.42em;font-weight:600;color:var(--muted);letter-spacing:0}
+.big.is-lamp{color:var(--amber)}
+.lead{margin:6px 0 0;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;max-width:60ch}
+.gauge{margin:20px 0 4px}
+.g-top{position:relative;height:24px}
+.g-lamp{position:absolute;bottom:4px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--amber);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.g-bar{position:relative}
+.g-track{position:relative;height:14px;border-radius:7px;background:var(--track);overflow:hidden}
+.g-rest{position:absolute;top:0;bottom:0;background:var(--ink);transition:left .35s ease,width .35s ease}
+.g-res{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(-45deg,var(--lamp-soft) 0 4px,transparent 4px 8px);box-shadow:inset 0 0 0 1px var(--lamp-line)}
+.g-mark{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;border-radius:1px;background:var(--lamp)}
+.g-caret{position:absolute;top:calc(100% + 4px);width:0;height:0;margin-left:-5px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:6px solid var(--ink)}
+.g-labels{display:flex;justify-content:space-between;gap:12px;margin-top:14px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.g-labels b{color:var(--ink);font-weight:600}
+.now{display:grid;grid-template-columns:auto minmax(0,10.5em);justify-content:start;align-items:center;gap:6px 12px;margin-top:18px}
+.now label{font-weight:600;font-size:14px}
+.now .hint{grid-column:1/-1}
+.basis{list-style:none;margin:16px 0 0;padding:12px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.basis:empty{display:none}
+
+/* Kennzahlen */
+.stats{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;border-top:1px solid var(--line)}
+@media (min-width:560px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.stat{padding:12px 0 13px;border-bottom:1px solid var(--line);min-width:0}
+.stat dt{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.stat dd{margin:3px 0 0;font-family:var(--font-display);font-weight:600;font-size:27px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat dd small{font-size:.56em;font-weight:600;color:var(--muted)}
+.stat .sub{display:block;margin-top:3px;font-family:var(--font-body);font-size:13px;font-weight:400;line-height:1.35;color:var(--muted)}
+
+/* Eintragen */
+.add-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.seg{display:inline-flex;gap:3px;padding:3px;border-radius:10px;background:var(--track)}
+.seg button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border:0;border-radius:8px;padding:7px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+form{display:flex;flex-direction:column;gap:12px;margin:0}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:13px;font-weight:600;color:var(--muted)}
+input{font:inherit;font-size:17px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-width:0;min-height:46px;font-variant-numeric:tabular-nums}
+input[type="date"]{-webkit-appearance:none;appearance:none;display:block}
+input::placeholder{color:var(--muted);opacity:.75}
+input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+input:disabled{opacity:.55}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.hint.warn{color:var(--danger)}
+.edit-note{margin:0;font-size:14px;font-weight:600;color:var(--amber)}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:inherit;font-size:15px;font-weight:600;border-radius:10px;padding:11px 16px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;min-height:44px}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.btn.danger{color:var(--danger);border-color:currentColor}
+.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.btn:disabled,.seg button:disabled{opacity:.5;cursor:not-allowed}
+.msg{margin:0;min-height:1.3em;font-size:14px}
+.msg.err{color:var(--danger)}
+.msg.ok{color:var(--good)}
+
+/* Verlauf */
+.log{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.log li{border-bottom:1px solid var(--line)}
+.log .empty{padding:14px 0;color:var(--muted)}
+.item{all:unset;box-sizing:border-box;display:grid;grid-template-columns:4.7em minmax(0,1fr) minmax(0,1fr) auto;align-items:baseline;gap:2px 12px;width:100%;padding:11px 4px;cursor:pointer;font-variant-numeric:tabular-nums;border-radius:6px}
+.item b{display:block;font-weight:600}
+.item small{display:block;font-size:13px;color:var(--muted)}
+.item .c-date{color:var(--muted);font-size:14px}
+.item .c-eur{text-align:right}
+.item .c-wide{grid-column:2/-1;min-width:0}
+.item.lamp b,.item.lamp .c-date{color:var(--amber)}
+@media (hover:hover){.item:hover{background:var(--track)}}
+.item[aria-current="true"]{background:var(--lamp-soft)}
+.item:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.note{margin:0;font-size:13px;color:var(--muted);max-width:62ch}
+@media (prefers-reduced-motion:reduce){.g-rest{transition:none}}
+</style>
+<style>
+/* Ergänzungen der öffentlichen Version: Hinweise, Daten und Sicherung, Import, Fußzeile */
+.banner{margin:0;padding:12px 14px;border-radius:10px;background:var(--lamp-soft);color:var(--ink);font-size:14px;display:flex;flex-direction:column;gap:10px}
+.banner p{margin:0}
+.banner.err{background:var(--surface);border:1px solid var(--danger)}
+.banner.err p{color:var(--danger)}
+.banner .btn{min-height:40px;padding:8px 14px;font-size:14px}
+.intro p{margin:0;max-width:62ch}
+.daten p{margin:0}
+.daten .wichtig{font-size:15px;color:var(--ink);max-width:62ch}
+.vh{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.vh:focus-visible + .btn{outline:2px solid var(--amber);outline-offset:2px}
+label.btn{display:inline-flex;align-items:center}
+select{font:inherit;font-size:16px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;width:100%;min-width:0;min-height:44px}
+select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--ink);align-self:end;min-height:44px}
+.check input{width:20px;height:20px;min-height:0;padding:0;margin:0;flex:none;accent-color:var(--amber)}
+.imp{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.imp h3{margin:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.imp .field small{font-weight:400;overflow-wrap:anywhere}
+.map{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.imp-sum{margin:0;font-size:14px;font-weight:600}
+.imp-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);max-height:24rem;overflow-y:auto;overscroll-behavior:contain}
+.imp-list li{padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.imp-list .pos{color:var(--muted);font-size:13px;margin-right:6px}
+.imp-list .st{display:block;font-size:13px;color:var(--muted)}
+.imp-list .st.neu{color:var(--good)}
+.imp-list .st.fehler{color:var(--danger)}
+.foot{display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.foot p{margin:0;max-width:62ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4v3H7z"/><path d="M14 10h1.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V8.5L17.5 6"/></svg>Tankbuch</h1>
+    <p class="meta" id="meta">Verbrauch, Kosten und die nächste Reserve</p>
+  </header>
+  <p class="status" id="status" role="status" hidden></p>
+  <div class="banner err" id="speicher-fehler" role="alert" hidden>
+    <p id="speicher-fehler-text"></p>
+    <div class="actions" id="speicher-fehler-aktionen" hidden><button type="button" class="btn" id="roh-sichern">Rohdaten sichern</button></div>
+  </div>
+  <div class="banner" id="erinnerung" hidden>
+    <p id="erinnerung-text"></p>
+    <div class="actions"><button type="button" class="btn" id="erinnerung-los">Zum Export</button></div>
+  </div>
+  <div class="banner" id="ios-tipp" hidden>
+    <p>Tipp fürs iPhone: Safari kann Website-Daten löschen, wenn du die Seite länger nicht nutzt. Als App auf dem Home-Bildschirm ist das Risiko geringer. Tippe dazu auf Teilen und dann auf „Zum Home-Bildschirm“. Die App dort hat einen eigenen Speicher, Einträge aus Safari nimmst du per Export und Import mit.</p>
+    <div class="actions"><button type="button" class="btn" id="ios-aus">Ausblenden</button></div>
+  </div>
+
+  <section class="panel intro" id="intro" aria-labelledby="h-intro" hidden>
+    <h2 class="eyebrow" id="h-intro">So funktioniert das Tankbuch</h2>
+    <p>Ein Tankstopp ist jeder Tankvorgang mit Datum, Km-Stand, getankten Litern und Betrag, egal ob voll oder nur teilweise. „Reserve ging an“ trägst du ein, sobald die Reservelampe aufleuchtet, mit dem Km-Stand in diesem Moment. Bei jeder Reservelampe ist der Tank gleich leer, deshalb entsprechen die Liter, die du zwischen zwei Lampen tankst, genau deinem Verbrauch auf dieser Strecke. Das ist genauer als eine Schätzung aus einzelnen Tankstopps und klappt ohne Volltanken.</p>
+    <div class="actions"><button type="button" class="btn primary" id="intro-ok">Verstanden</button></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-add">
+    <div class="add-head">
+      <h2 class="eyebrow" id="h-add">Eintragen</h2>
+      <div class="seg" role="group" aria-label="Art des Eintrags">
+        <button type="button" id="seg-tank" aria-pressed="true">Tankstopp</button>
+        <button type="button" id="seg-lampe" aria-pressed="false">Reserve ging an</button>
+      </div>
+    </div>
+    <form id="f-tank" novalidate>
+      <p class="edit-note" id="t-edit" hidden></p>
+      <div class="row2">
+        <label class="field">Datum<input id="t-datum" type="date"></label>
+        <label class="field">Km-Stand<input id="t-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48250"></label>
+      </div>
+      <div class="row2">
+        <label class="field">Liter<input id="t-liter" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 35,5"></label>
+        <label class="field">Betrag (€)<input id="t-betrag" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 62,40"></label>
+      </div>
+      <p class="hint" id="t-preis">Der Literpreis wird daraus berechnet.</p>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="t-save">Tankstopp speichern</button>
+        <button type="button" class="btn" id="t-cancel" hidden>Abbrechen</button>
+        <button type="button" class="btn danger" id="t-del" hidden>Löschen</button>
+      </div>
+      <p class="msg" id="t-msg" role="status"></p>
+    </form>
+    <form id="f-lampe" novalidate hidden>
+      <p class="edit-note" id="l-edit" hidden></p>
+      <div class="row2">
+        <label class="field">Km-Stand<input id="l-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48600"></label>
+        <label class="field">Datum<input id="l-datum" type="date"></label>
+      </div>
+      <p class="hint">Der Km-Stand, bei dem die Reservelampe anging. Von Reserve zu Reserve misst das Tankbuch deinen Verbrauch genau, auch ohne Volltanken.</p>
+      <div class="actions">
+        <button type="submit" class="btn primary" id="l-save">Reserve speichern</button>
+        <button type="button" class="btn" id="l-cancel" hidden>Abbrechen</button>
+        <button type="button" class="btn danger" id="l-del" hidden>Löschen</button>
+      </div>
+      <p class="msg" id="l-msg" role="status"></p>
+    </form>
+  </section>
+
+  <section class="panel hero" aria-labelledby="h-hero">
+    <h2 class="eyebrow" id="h-hero">Reserve</h2>
+    <p class="big" id="big">…</p>
+    <p class="lead" id="lead">Tankbuch wird geladen.</p>
+    <div class="gauge" id="gauge" role="img" aria-label="Strecke bis zur Reserve" hidden>
+      <div class="g-top"><span class="g-lamp" id="g-lamp"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4v3H7z"/><path d="M14 10h1.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V8.5L17.5 6"/></svg><span id="g-lamp-km"></span></span></div>
+      <div class="g-bar">
+        <div class="g-track"><div class="g-rest" id="g-rest"></div><div class="g-res" id="g-res"></div></div>
+        <div class="g-mark" id="g-mark"></div>
+        <div class="g-caret" id="g-caret" hidden></div>
+      </div>
+      <div class="g-labels"><span id="g-start"></span><span>Reserve</span></div>
+    </div>
+    <div class="now" id="now" hidden>
+      <label for="jetzt">Km-Stand jetzt</label>
+      <input id="jetzt" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done">
+      <p class="hint" id="jetzt-hint">Optional, für eine Prognose ab heute.</p>
+    </div>
+    <ul class="basis" id="basis"></ul>
+  </section>
+
+  <section aria-labelledby="h-stats">
+    <h2 class="eyebrow" id="h-stats">Kennzahlen</h2>
+    <dl class="stats" id="stats"></dl>
+  </section>
+
+  <section aria-labelledby="h-log">
+    <h2 class="eyebrow" id="h-log">Verlauf</h2>
+    <ul class="log" id="log"><li class="empty">Wird geladen …</li></ul>
+    <p class="note">Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen.</p>
+  </section>
+
+  <section class="panel daten" id="daten" aria-labelledby="h-daten">
+    <h2 class="eyebrow" id="h-daten">Daten und Sicherung</h2>
+    <p class="wichtig"><b>Deine Einträge liegen nur auf diesem Gerät</b>, in diesem Browser. Es gibt kein Konto und keine Kopie im Netz. Löschst du die Browserdaten oder wechselst du das Gerät, sind sie weg, außer du hast sie exportiert.</p>
+    <p class="hint" id="export-stand"></p>
+    <p class="hint" id="persist-stand" hidden></p>
+    <div class="actions">
+      <button type="button" class="btn" id="exp-csv">Export als CSV</button>
+      <button type="button" class="btn" id="exp-json">Export als JSON</button>
+    </div>
+    <p class="msg" id="exp-msg" role="status"></p>
+    <div class="actions">
+      <input type="file" id="imp-datei" class="vh" accept=".csv,.json,.txt,text/csv,application/json,text/plain">
+      <label class="btn" for="imp-datei">Import aus Datei</label>
+      <button type="button" class="btn" id="vorlage">CSV-Vorlage</button>
+    </div>
+    <p class="hint">Import aus Notizen oder Excel als CSV mit den Spalten Typ (Tankstopp oder Reserve), Datum, Km-Stand, Liter und Betrag, oder eine JSON-Datei aus dem Export. Fehlt die Spalte Typ, gilt jede Zeile als Tankstopp. Ersetze in der Vorlage die zwei Beispielzeilen durch deine Daten.</p>
+    <div class="imp" id="imp" hidden>
+      <h3 id="imp-titel"></h3>
+      <div class="row2" id="imp-opts">
+        <label class="field">Trennzeichen<select id="imp-trenn"><option value=";">Semikolon ( ; )</option><option value=",">Komma ( , )</option><option value="tab">Tabulator</option></select></label>
+        <label class="check"><input type="checkbox" id="imp-kopf">Erste Zeile ist Kopfzeile</label>
+      </div>
+      <p class="hint" id="imp-map-hint">Prüfe, was in jeder Spalte steht, und ändere die Zuordnung, falls nötig.</p>
+      <div class="map" id="imp-map"></div>
+      <p class="msg err" id="imp-map-fehler"></p>
+      <p class="imp-sum" id="imp-sum"></p>
+      <ul class="imp-list" id="imp-list"></ul>
+      <div class="actions">
+        <button type="button" class="btn primary" id="imp-ok">Übernehmen</button>
+        <button type="button" class="btn" id="imp-abbr">Abbrechen</button>
+      </div>
+    </div>
+    <p class="msg" id="imp-msg" role="status"></p>
+    <p class="hint">iPhone: Safari kann Website-Daten nach längerer Nichtnutzung löschen. Als App auf dem Home-Bildschirm ist das Risiko geringer, deshalb in Safari über Teilen „Zum Home-Bildschirm“ wählen.</p>
+    <div class="actions"><button type="button" class="btn danger" id="alles-loeschen">Alle Daten löschen</button></div>
+    <div class="banner err" id="loeschen-frage" hidden>
+      <p>Alle Einträge auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen. Exportiere vorher, wenn du sie behalten willst.</p>
+      <div class="actions">
+        <button type="button" class="btn danger" id="loeschen-ja">Ja, alles löschen</button>
+        <button type="button" class="btn" id="loeschen-nein">Abbrechen</button>
+      </div>
+    </div>
+    <p class="msg" id="loeschen-msg" role="status"></p>
+  </section>
+
+  <!-- TEXTENTWURF Datenschutz und Impressum: rechtlich nicht geprüft. Vor dem Teilen des Links prüfen und den Platzhalter ausfüllen. -->
+  <footer class="foot" aria-labelledby="h-foot">
+    <h2 class="eyebrow" id="h-foot">Datenschutz</h2>
+    <p>Das Tankbuch speichert deine Einträge nur im Speicher deines Browsers auf diesem Gerät, zusammen mit einer zufälligen Gerätekennung, die das Gerät nicht verlässt. Es überträgt keine Einträge an den Betreiber oder an Dritte, setzt keine Cookies, nutzt kein Tracking und keine Werbung und lädt nichts von fremden Servern.</p>
+    <p>Der Hoster dieser Seite (GitHub Pages der GitHub Inc.) speichert beim Aufruf technisch bedingt Zugriffsprotokolle, zum Beispiel IP-Adresse, Zeitpunkt und abgerufene Datei.</p>
+    <p>Impressum: [Name, Anschrift und Kontakt des Betreibers ergänzen]</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const PUMP = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M7 7h4v3H7z"/><path d="M14 10h1.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0V8.5L17.5 6"/></svg>';
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+const nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nfL = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+const fKm = (n) => nf0.format(Math.round(n));
+const fL = (n) => nfL.format(n) + ' l';
+const fEur = (n) => nf2.format(n) + ' €';
+const fPreis = (p) => { const [a, b] = (Math.round(p * 1000) / 1000).toFixed(3).split('.'); return a + ',' + b.slice(0, 2) + '<sup>' + b[2] + '</sup>'; };
+const dm = (iso) => { const p = iso.split('-'); return p[2] + '.' + p[1] + '.'; };
+const dmy = (iso) => { const p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0].slice(2); };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function spanne(a, b) {
+  if (a === b) return dm(a);
+  const pa = a.split('-'), pb = b.split('-');
+  if (pa[0] === pb[0] && pa[1] === pb[1]) return pa[2] + '.–' + pb[2] + '.' + pb[1] + '.';
+  return dm(a) + '–' + dm(b);
+}
+function heute() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function parseKm(s) { const v = String(s).replace(/[\s.]/g, ''); return /^\d{1,7}$/.test(v) && Number(v) > 0 ? Number(v) : null; }
+function parseDez(s) { let v = String(s).trim().replace(/\s/g, ''); if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.'); return /^\d+(\.\d+)?$/.test(v) ? Number(v) : null; }
+const okFill = (f) => f && Number.isFinite(f.km) && f.km > 0 && Number.isFinite(f.liter) && f.liter > 0 && Number.isFinite(f.betrag) && f.betrag >= 0 && typeof f.datum === 'string' && ISO.test(f.datum);
+const okLamp = (l) => l && Number.isFinite(l.km) && l.km > 0 && (l.datum == null || (typeof l.datum === 'string' && ISO.test(l.datum)));
+/*CALC-START*/
+const DAY = 86400000;
+function ms(iso) { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d); }
+function tageZwischen(a, b) { return Math.round((ms(b) - ms(a)) / DAY); }
+function plusTage(iso, n) { const d = new Date(ms(iso) + Math.round(n) * DAY); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); }
+function berechne(fillsIn, lampsIn, jetztKm, heuteIso) {
+  const fills = fillsIn.slice().sort((a, b) => a.km - b.km || (a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : 0));
+  const lamps = lampsIn.slice().sort((a, b) => a.km - b.km);
+  const m = { fills, lamps, zyklen: [], reserve: [], reserveMax: 0 };
+  if (!fills.length) { m.status = 'leer'; return m; }
+  const first = fills[0], last = fills[fills.length - 1];
+  m.first = first; m.last = last;
+  m.sumL = fills.reduce((s, f) => s + f.liter, 0);
+  m.sumE = fills.reduce((s, f) => s + f.betrag, 0);
+  m.avgPreis = m.sumE / m.sumL;
+  m.lastPreis = last.betrag / last.liter;
+
+  // Fahrleistung: gesamt und über mindestens die letzten 7 Tage
+  const tage = tageZwischen(first.datum, last.datum);
+  if (fills.length >= 2 && tage > 0 && last.km > first.km) m.rateAvg = (last.km - first.km) / tage;
+  for (let j = fills.length - 2; j >= 0; j--) {
+    const t = tageZwischen(fills[j].datum, last.datum);
+    if (t >= 7) { if (last.km > fills[j].km) m.rateRecent = (last.km - fills[j].km) / t; break; }
+  }
+
+  // Lampe zu Lampe: gleicher Füllstand an beiden Enden, dazwischen getankte Liter = Verbrauch
+  for (let i = 1; i < lamps.length; i++) {
+    const A = lamps[i - 1], B = lamps[i];
+    if (B.km <= A.km) continue;
+    const l = fills.filter((f) => f.km >= A.km && f.km < B.km).reduce((s, f) => s + f.liter, 0);
+    if (l > 0) m.zyklen.push({ von: A, bis: B, km: B.km - A.km, liter: l, verbrauch: l / (B.km - A.km) * 100 });
+  }
+  m.reserve = lamps.map((L) => { const f = fills.find((x) => x.km >= L.km); return f ? f.km - L.km : null; });
+  m.reserveMax = m.reserve.reduce((mx, r) => (r != null && r > mx ? r : mx), 0);
+
+  const rz = m.zyklen.slice(-3);
+  if (rz.length) {
+    m.verbrauch = rz.reduce((s, z) => s + z.liter, 0) / rz.reduce((s, z) => s + z.km, 0) * 100;
+    m.quelle = 'lampe'; m.zyklenN = rz.length;
+  } else if (fills.length >= 2 && last.km > first.km) {
+    m.verbrauch = fills.slice(0, -1).reduce((s, f) => s + f.liter, 0) / (last.km - first.km) * 100;
+    m.quelle = 'tank';
+  }
+  if (m.verbrauch) {
+    m.ctProKm = m.verbrauch * m.lastPreis;
+    if (m.rateAvg) m.monatAvg = m.rateAvg * 30 * m.verbrauch / 100 * m.avgPreis;
+    if (m.rateRecent) m.monatRecent = m.rateRecent * 30 * m.verbrauch / 100 * m.lastPreis;
+  }
+
+  // Prognose: nächste Lampe, wenn die seit der letzten Lampe getankten Liter verbraucht sind
+  const L = lamps[lamps.length - 1];
+  if (!L) { m.status = 'keineLampe'; return m; }
+  m.lampe = L;
+  const nach = fills.filter((f) => f.km >= L.km);
+  if (!nach.length) {
+    m.status = 'leuchtet';
+    if (jetztKm != null && jetztKm >= L.km) m.inReserve = jetztKm - L.km;
+    return m;
+  }
+  if (!m.verbrauch) { m.status = 'keinVerbrauch'; return m; }
+  const start = nach[nach.length - 1];
+  m.lNach = nach.reduce((s, f) => s + f.liter, 0);
+  m.reichweite = m.lNach / m.verbrauch * 100;
+  m.lampKm = L.km + m.reichweite;
+  m.startKm = start.km; m.startDatum = start.datum;
+  const jetztOk = jetztKm != null && jetztKm >= start.km;
+  m.jetztKm = jetztOk ? jetztKm : null;
+  m.baseKm = jetztOk ? jetztKm : start.km;
+  m.baseDatum = jetztOk ? heuteIso : start.datum;
+  m.rest = m.lampKm - m.baseKm;
+  if (m.rest <= 0) { m.status = 'faellig'; return m; }
+  m.status = 'prognose';
+  const d = [];
+  if (m.rateRecent) d.push(plusTage(m.baseDatum, m.rest / m.rateRecent));
+  if (m.rateAvg) d.push(plusTage(m.baseDatum, m.rest / m.rateAvg));
+  d.sort();
+  if (d.length) { m.datumVon = d[0]; m.datumBis = d[d.length - 1]; }
+  return m;
+}
+/*CALC-END*/
+
+/* Speicher: alles bleibt auf diesem Gerät. Eine zufällige, anonyme Geräte-ID ordnet die Einträge zu. */
+const K_GERAET = 'tankbuch-geraet';
+const K_JETZT = 'tankbuch-jetzt';
+const kDaten = (id) => 'tankbuch-daten-' + id;
+const FORMAT = 1;
+const TAG_MS = 86400000;
+const VORLAGE = ["Typ;Datum;Km-Stand;Liter;Betrag", "Tankstopp;03.08.2026;48250;35,5;62,40", "Reserve;10.08.2026;48600;;"];
+
+let geraetId = null;
+let daten = null;
+let rohT = [], rohL = [];
+let speicherSperre = '';
+let rohText = null;
+let persistGefragt = false;
+let editing = null;
+let jetztKm = null;
+let jetztFehler = '';
+let imp = null;
+
+const linien = (arr) => arr.filter(Boolean).map((t) => '<li>' + t + '</li>').join('');
+function msg(id, text, cls) { const el = $(id); el.textContent = text || ''; el.className = 'msg' + (cls ? ' ' + cls : ''); }
+function hinweis(text) { const el = $('status'); el.textContent = text; el.hidden = !text; }
+const datumDe = (iso) => { const p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; };
+function isoLokal(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+const kurz = (s, n) => { const t = String(s); const max = n || 24; return t.length > max ? t.slice(0, max - 1) + '…' : t; };
+const anzahl = (n, eins, mehr) => n + ' ' + (n === 1 ? eins : mehr);
+
+function leererStand() {
+  return { format: FORMAT, tankstopps: [], lampe: [], meta: { exportiert: null, neuSeitExport: 0, neuSeit: null, intro: false, iosAus: false } };
+}
+function setzeStand(d) { daten = d; rohT = d.tankstopps; rohL = d.lampe; }
+function kopie() { return JSON.parse(JSON.stringify(daten)); }
+
+function neueId() {
+  const c = window.crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+}
+
+function fehlerText(err) {
+  const name = err && err.name, code = err && err.code;
+  if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || code === 22 || code === 1014) return 'Der Speicher dieses Browsers ist voll oder gesperrt, zum Beispiel im privaten Modus.';
+  if (name === 'SecurityError') return 'Der Browser erlaubt dieser Seite keinen Speicher, zum Beispiel weil Website-Daten blockiert sind.';
+  return 'Der Browser hat das Speichern abgelehnt' + (name ? ' (' + name + ')' : '') + '.';
+}
+function zeigeSpeicherFehler(text, mitRoh) {
+  $('speicher-fehler-text').textContent = text || '';
+  $('speicher-fehler-aktionen').hidden = !mitRoh;
+  $('speicher-fehler').hidden = !text;
+}
+function sperre(text, mitRoh) { speicherSperre = text; setzeStand(leererStand()); zeigeSpeicherFehler(text, mitRoh); }
+
+function liesStand(roh) {
+  let o;
+  try { o = JSON.parse(roh); } catch (err) { return null; }
+  if (!o || typeof o !== 'object' || !Array.isArray(o.tankstopps) || !Array.isArray(o.lampe)) return null;
+  const d = leererStand();
+  d.tankstopps = o.tankstopps; d.lampe = o.lampe;
+  if (o.meta && typeof o.meta === 'object') Object.assign(d.meta, o.meta);
+  return d;
+}
+
+function lade() {
+  speicherSperre = ''; rohText = null;
+  const nichtMoeglich = (err) => 'Speichern nicht möglich: ' + fehlerText(err) + ' Einträge lassen sich auf diesem Gerät nicht sichern. Erlaube Website-Daten und lade die Seite neu.';
+  let ls;
+  try { ls = window.localStorage; geraetId = ls.getItem(K_GERAET); }
+  catch (err) { geraetId = null; sperre(nichtMoeglich(err), false); return; }
+  if (!geraetId) {
+    const id = neueId();
+    try { ls.setItem(K_GERAET, id); geraetId = id; }
+    catch (err) { geraetId = null; sperre(nichtMoeglich(err), false); return; }
+  }
+  let roh;
+  try { roh = ls.getItem(kDaten(geraetId)); }
+  catch (err) { sperre(nichtMoeglich(err), false); return; }
+  if (roh == null) { setzeStand(leererStand()); zeigeSpeicherFehler('', false); return; }
+  const d = liesStand(roh);
+  if (!d) {
+    rohText = roh;
+    sperre('Die gespeicherten Daten auf diesem Gerät lassen sich nicht lesen. Damit nichts überschrieben wird, ist Speichern gesperrt. Sichere die Rohdaten, bevor du „Alle Daten löschen“ wählst.', true);
+    return;
+  }
+  setzeStand(d); zeigeSpeicherFehler('', false);
+}
+
+// Schreibt den ganzen Stand in einem Schritt. Nur wenn das klappt, gilt der neue Stand.
+function speichern(neu, msgId) {
+  if (speicherSperre) { if (msgId) msg(msgId, speicherSperre, 'err'); return false; }
+  try { window.localStorage.setItem(kDaten(geraetId), JSON.stringify(neu)); }
+  catch (err) {
+    const t = 'Nicht gespeichert: ' + fehlerText(err) + ' Es wurde nichts geändert. Exportiere deine Daten, damit nichts verloren geht.';
+    if (msgId) msg(msgId, t, 'err');
+    zeigeSpeicherFehler(t, false);
+    return false;
+  }
+  zeigeSpeicherFehler('', false);
+  setzeStand(neu);
+  return true;
+}
+function merkeMeta(key, wert) {
+  const neu = kopie(); neu.meta[key] = wert;
+  if (!speichern(neu, null)) daten.meta[key] = wert;
+}
+
+function dauerhaftAnfragen() {
+  if (persistGefragt || !navigator.storage || typeof navigator.storage.persist !== 'function') return;
+  persistGefragt = true;
+  navigator.storage.persist().then(zeigePersist, () => zeigePersist(false));
+}
+function persistStand() {
+  if (!navigator.storage || typeof navigator.storage.persisted !== 'function') return;
+  navigator.storage.persisted().then(zeigePersist, () => zeigePersist(false));
+}
+function zeigePersist(ja) {
+  const el = $('persist-stand');
+  el.textContent = ja
+    ? 'Der Browser hat zugesagt, die Daten nicht von sich aus zu löschen.'
+    : 'Der Browser darf die Daten bei Speichermangel oder langer Nichtnutzung löschen. Exportiere deshalb regelmäßig.';
+  el.hidden = false;
+}
+
+function schreiben(coll, id, data, msgId) {
+  const neu = kopie(), arr = neu[coll];
+  if (id) {
+    const i = arr.findIndex((x) => x.id === id);
+    if (i < 0) { msg(msgId, 'Der Eintrag ist nicht mehr vorhanden.', 'err'); return false; }
+    arr[i] = Object.assign({ id }, data);
+  } else {
+    arr.push(Object.assign({ id: neueId() }, data));
+    neu.meta.neuSeitExport = (neu.meta.neuSeitExport || 0) + 1;
+    if (!neu.meta.neuSeit) neu.meta.neuSeit = Date.now();
+  }
+  const ok = speichern(neu, msgId);
+  if (ok) dauerhaftAnfragen();
+  return ok;
+}
+function entfernen(coll, id, msgId) {
+  const neu = kopie();
+  neu[coll] = neu[coll].filter((x) => x.id !== id);
+  return speichern(neu, msgId);
+}
+
+function render() {
+  const m = berechne(rohT.filter(okFill), rohL.filter(okLamp), jetztKm, heute());
+  renderMeta(m); renderHero(m); renderStats(m); renderLog(m); renderDaten();
+}
+
+function renderMeta(m) {
+  $('meta').textContent = m.fills.length
+    ? m.fills.length + (m.fills.length === 1 ? ' Tankstopp seit ' : ' Tankstopps seit ') + dmy(m.first.datum)
+    : 'Verbrauch, Kosten und die nächste Reserve';
+}
+
+function jetztHinweis(refKm) {
+  const h = $('jetzt-hint');
+  if (jetztKm != null && jetztKm < refKm && String(jetztKm).length >= String(refKm).length) {
+    h.textContent = 'Kleiner als beim letzten Eintrag (' + fKm(refKm) + ' km).'; h.classList.add('warn');
+  } else {
+    h.textContent = jetztKm != null ? 'Prognose ab heute.' : 'Optional, für eine Prognose ab heute.'; h.classList.remove('warn');
+  }
+  if (jetztFehler) { h.textContent += ' ' + jetztFehler; h.classList.add('warn'); }
+}
+
+function renderHero(m) {
+  const big = $('big'), lead = $('lead'), basis = $('basis');
+  $('gauge').hidden = true; $('now').hidden = true; basis.innerHTML = '';
+  big.classList.remove('is-lamp');
+  $('h-hero').textContent = 'Reserve';
+  const L = m.lampe, ca = L && L.ca ? 'ca. ' : '';
+  if (m.status === 'leer') {
+    big.textContent = 'Noch leer';
+    lead.textContent = 'Trag oben deinen ersten Tankstopp ein. Danach steht hier, wann die Reservelampe angeht.';
+    return;
+  }
+  if (m.status === 'keineLampe') {
+    big.textContent = 'Noch keine Reserve';
+    lead.textContent = 'Trag oben unter „Reserve ging an“ den Km-Stand ein, bei dem die Reservelampe angeht. Ab dann rechnet das Tankbuch aus, wann die nächste kommt.';
+    return;
+  }
+  if (m.status === 'keinVerbrauch') {
+    big.textContent = 'Zu wenig Daten';
+    lead.textContent = 'Für die Prognose braucht es mindestens zwei Tankstopps.';
+    return;
+  }
+  $('now').hidden = false;
+  if (m.status === 'leuchtet') {
+    big.textContent = 'Reserve an'; big.classList.add('is-lamp');
+    lead.textContent = 'seit ' + ca + fKm(L.km) + ' km' + (m.inReserve != null ? ' · ' + fKm(m.inReserve) + ' km in der Reserve' : '');
+    jetztHinweis(L.km);
+    basis.innerHTML = linien([
+      m.reserveMax ? 'Bisher bist du bis zu ' + fKm(m.reserveMax) + ' km in der Reserve gefahren.' : '',
+      'Nach dem nächsten Tankstopp startet hier die neue Prognose.'
+    ]);
+    return;
+  }
+  if (m.status === 'prognose') {
+    $('h-hero').textContent = 'Reservelampe geht an bei';
+    big.innerHTML = '<small>ca. </small>' + fKm(m.lampKm) + '<small> km</small>';
+    lead.textContent = (m.datumVon ? 'voraussichtlich ' + spanne(m.datumVon, m.datumBis) + ' · ' : '') + 'noch ≈ ' + fKm(m.rest) + ' km';
+  } else {
+    big.textContent = 'Reserve fällig'; big.classList.add('is-lamp');
+    lead.textContent = 'Laut Rechnung bei ca. ' + fKm(m.lampKm) + ' km, also vor ca. ' + fKm(-m.rest) + ' km.';
+  }
+  jetztHinweis(m.startKm);
+  let tempo = '';
+  if (m.status === 'prognose' && m.datumVon) {
+    tempo = m.rateRecent && m.rateAvg
+      ? 'Datum je nach Tempo: zuletzt ' + nf1.format(m.rateRecent) + ', im Schnitt ' + nf1.format(m.rateAvg) + ' km pro Tag.'
+      : 'Datum bei ' + nf1.format(m.rateRecent || m.rateAvg) + ' km pro Tag.';
+  }
+  basis.innerHTML = linien([
+    'Rechnung: ' + fL(m.lNach) + ' getankt seit der letzten Reserve bei ' + ca + fKm(L.km) + ' km; bei ' + nf2.format(m.verbrauch) + ' l/100 km reicht das für ' + fKm(m.reichweite) + ' km.',
+    m.jetztKm == null ? 'Ab Tankstopp am ' + dmy(m.startDatum) + ' bei ' + fKm(m.startKm) + ' km.' : '',
+    tempo,
+    m.reserveMax ? 'In der Reserve bist du bisher bis zu ' + fKm(m.reserveMax) + ' km gefahren.' : '',
+    m.status === 'faellig' ? 'Trag oben unter „Reserve ging an“ den Km-Stand ein, sobald die Lampe angeht.' : ''
+  ]);
+  renderGauge(m);
+}
+
+function renderGauge(m) {
+  const spanL = m.lampKm - m.startKm;
+  if (!(spanL > 0)) return;
+  const spanR = m.reserveMax > 0 ? m.reserveMax : Math.max(20, spanL * 0.15);
+  const total = spanL + spanR;
+  const pL = spanL / total * 100;
+  const pJ = Math.min(100, Math.max(0, (m.baseKm - m.startKm) / total * 100));
+  const rest = $('g-rest');
+  rest.style.left = Math.min(pJ, pL) + '%';
+  rest.style.width = Math.max(0, pL - pJ) + '%';
+  $('g-res').style.left = pL + '%';
+  $('g-mark').style.left = pL + '%';
+  const lab = $('g-lamp');
+  lab.style.left = pL + '%';
+  if (pL > 72) { lab.style.flexDirection = 'row-reverse'; lab.style.transform = 'translateX(calc(-100% + 7px))'; }
+  else if (pL < 28) { lab.style.flexDirection = 'row'; lab.style.transform = 'translateX(-7px)'; }
+  else { lab.style.flexDirection = 'row'; lab.style.transform = 'translateX(-50%)'; }
+  $('g-lamp-km').textContent = fKm(m.lampKm);
+  const caret = $('g-caret');
+  caret.hidden = m.jetztKm == null;
+  caret.style.left = pJ + '%';
+  $('g-start').innerHTML = '<b>' + fKm(m.startKm) + '</b> · getankt ' + dm(m.startDatum);
+  $('gauge').setAttribute('aria-label', m.rest > 0
+    ? 'Noch ca. ' + fKm(m.rest) + ' km bis zur Reservelampe bei ca. ' + fKm(m.lampKm) + ' km'
+    : 'Reservelampe laut Rechnung fällig');
+  $('gauge').hidden = false;
+}
+
+function renderStats(m) {
+  const has = m.fills.length > 0;
+  const items = [
+    ['Verbrauch', has && m.verbrauch ? nf2.format(m.verbrauch) + '<small> l/100 km</small>' : '–',
+      !has ? '' : m.quelle === 'lampe' ? 'Reserve zu Reserve · ' + m.zyklenN + (m.zyklenN === 1 ? ' Zyklus' : ' Zyklen') : m.quelle === 'tank' ? 'Schätzung aus Tankstopps' : 'braucht zwei Tankstopps'],
+    ['Ø Literpreis', has ? fPreis(m.avgPreis) + '<small> €</small>' : '–', has ? 'zuletzt ' + fPreis(m.lastPreis) + ' €' : ''],
+    ['Sprit pro km', has && m.ctProKm ? nf1.format(m.ctProKm) + '<small> ct</small>' : '–', has && m.ctProKm ? 'zum letzten Preis' : ''],
+    ['Sprit pro Monat', has && m.monatAvg ? '≈ ' + fKm(m.monatAvg) + '<small> €</small>' : '–', has && m.monatAvg ? 'bisher' + (m.monatRecent ? ' · zuletzt ≈ ' + fKm(m.monatRecent) + ' €' : '') : ''],
+    ['Fahrleistung', has && m.rateAvg ? nf1.format(m.rateAvg) + '<small> km/Tag</small>' : '–', has && m.rateRecent ? 'zuletzt ' + nf1.format(m.rateRecent) + ' km/Tag' : ''],
+    ['Getankt', has ? nfL.format(m.sumL) + '<small> l</small>' : '–', has ? fEur(m.sumE) + ' · ' + m.fills.length + (m.fills.length === 1 ? ' Stopp' : ' Stopps') : '']
+  ];
+  $('stats').innerHTML = items.map(([dt, dd, sub]) =>
+    '<div class="stat"><dt>' + dt + '</dt><dd>' + dd + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</dd></div>').join('');
+}
+
+function renderLog(m) {
+  const ul = $('log');
+  if (!m.fills.length && !m.lamps.length) { ul.innerHTML = '<li class="empty">Noch keine Einträge. Trag oben deinen ersten Tankstopp ein.</li>'; return; }
+  const rows = [];
+  m.fills.forEach((f, i) => rows.push({ typ: 't', km: f.km, f, prev: i ? m.fills[i - 1] : null }));
+  m.lamps.forEach((l, i) => rows.push({ typ: 'l', km: l.km, l, i }));
+  rows.sort((a, b) => b.km - a.km || (a.typ === b.typ ? 0 : a.typ === 't' ? -1 : 1));
+  ul.innerHTML = rows.map((r) => (r.typ === 't' ? zeileTank(r) : zeileLampe(r, m))).join('');
+}
+
+function zeileTank(r) {
+  const f = r.f, sel = editing && editing.typ === 't' && editing.id === f.id;
+  return '<li><button type="button" class="item" data-typ="t" data-id="' + esc(f.id) + '"' + (sel ? ' aria-current="true"' : '') + '>' +
+    '<span class="c-date">' + dmy(f.datum) + '</span>' +
+    '<span class="c-km"><b>' + fKm(f.km) + '</b><small>' + (r.prev ? '+' + fKm(f.km - r.prev.km) + ' km' : 'Start') + '</small></span>' +
+    '<span class="c-l"><b>' + fL(f.liter) + '</b><small>' + fPreis(f.betrag / f.liter) + ' €/l</small></span>' +
+    '<span class="c-eur"><b>' + fEur(f.betrag) + '</b></span></button></li>';
+}
+
+function zeileLampe(r, m) {
+  const l = r.l, sel = editing && editing.typ === 'l' && editing.id === l.id;
+  const z = m.zyklen.find((x) => x.bis === l);
+  const res = m.reserve[r.i];
+  const teile = [res != null ? fKm(res) + ' km in der Reserve gefahren' : 'leuchtet noch'];
+  if (z) teile.push('Zyklus: ' + fL(z.liter) + ' auf ' + fKm(z.km) + ' km = ' + nf2.format(z.verbrauch) + ' l/100 km');
+  return '<li><button type="button" class="item lamp" data-typ="l" data-id="' + esc(l.id) + '"' + (sel ? ' aria-current="true"' : '') + '>' +
+    '<span class="c-date">' + (l.datum ? dmy(l.datum) : PUMP) + '</span>' +
+    '<span class="c-wide"><b>Reserve an bei ' + (l.ca ? 'ca. ' : '') + fKm(l.km) + ' km</b><small>' + teile.join(' · ') + '</small></span></button></li>';
+}
+
+/* Hinweise: Erststart, iPhone, Export-Erinnerung */
+function istIOS() { const ua = navigator.userAgent || ''; return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function istStandalone() { return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
+function renderDaten() {
+  const meta = daten.meta, n = meta.neuSeitExport || 0;
+  $('intro').hidden = !!meta.intro;
+  $('ios-tipp').hidden = !(istIOS() && !istStandalone() && !meta.iosAus);
+  const ref = meta.exportiert ? Date.parse(meta.exportiert) : meta.neuSeit;
+  const alt = Number.isFinite(ref) && Date.now() - ref > 30 * TAG_MS;
+  const tage = Number.isFinite(ref) ? Math.floor((Date.now() - ref) / TAG_MS) : 0;
+  const erinnern = n > 0 && alt;
+  $('erinnerung').hidden = !erinnern;
+  if (erinnern) {
+    $('erinnerung-text').textContent = meta.exportiert
+      ? 'Dein letzter Export ist ' + tage + ' Tage her. Seitdem ' + (n === 1 ? 'ist 1 neuer Eintrag' : 'sind ' + n + ' neue Einträge') + ' dazugekommen. Sichere sie mit einem Export.'
+      : 'Du hast noch nie exportiert. Dein erster Eintrag ist ' + tage + ' Tage her. Sichere deine Einträge mit einem Export.';
+  }
+  $('export-stand').textContent = meta.exportiert
+    ? 'Letzter Export: ' + datumDe(isoLokal(new Date(meta.exportiert))) + (n ? ' · seitdem ' + anzahl(n, 'neuer Eintrag', 'neue Einträge') : '')
+    : 'Noch kein Export.';
+}
+
+/* Eintragen */
+function modus(x) {
+  const tank = x === 'tank';
+  $('seg-tank').setAttribute('aria-pressed', String(tank));
+  $('seg-lampe').setAttribute('aria-pressed', String(!tank));
+  $('f-tank').hidden = !tank; $('f-lampe').hidden = tank;
+}
+function preisHint() {
+  const l = parseDez($('t-liter').value), b = parseDez($('t-betrag').value);
+  $('t-preis').innerHTML = l && b ? '= ' + fPreis(b / l) + ' €/l' : 'Der Literpreis wird daraus berechnet.';
+}
+function leerTank() { $('t-datum').value = heute(); $('t-km').value = ''; $('t-liter').value = ''; $('t-betrag').value = ''; preisHint(); }
+function leerLampe() { $('l-datum').value = heute(); $('l-km').value = ''; }
+function endEdit() {
+  editing = null;
+  ['t', 'l'].forEach((p) => {
+    $(p + '-edit').hidden = true; $(p + '-cancel').hidden = true;
+    const d = $(p + '-del'); d.hidden = true; d.dataset.armed = ''; d.textContent = 'Löschen';
+  });
+  $('t-save').textContent = 'Tankstopp speichern'; $('l-save').textContent = 'Reserve speichern';
+  render();
+}
+function startEdit(p, label) {
+  $(p + '-edit').textContent = label; $(p + '-edit').hidden = false;
+  $(p + '-save').textContent = 'Änderung speichern';
+  $(p + '-cancel').hidden = false; $(p + '-del').hidden = false;
+  msg(p + '-msg', '');
+  render();
+  $(p === 't' ? 'f-tank' : 'f-lampe').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+}
+function bearbeiteTank(f) {
+  if (editing) endEdit();
+  modus('tank');
+  editing = { typ: 't', id: f.id, orig: f };
+  $('t-datum').value = f.datum; $('t-km').value = String(f.km);
+  $('t-liter').value = nfL.format(f.liter); $('t-betrag').value = nf2.format(f.betrag);
+  preisHint();
+  startEdit('t', 'Tankstopp vom ' + dmy(f.datum) + ' bearbeiten');
+}
+function bearbeiteLampe(l) {
+  if (editing) endEdit();
+  modus('lampe');
+  editing = { typ: 'l', id: l.id, orig: l };
+  $('l-km').value = String(l.km); $('l-datum').value = l.datum || '';
+  startEdit('l', 'Reserve bei ' + fKm(l.km) + ' km bearbeiten');
+}
+function armDelete(btn, run) {
+  if (btn.dataset.armed === '1') { btn.dataset.armed = ''; clearTimeout(btn._t); btn.textContent = 'Löschen'; run(); return; }
+  btn.dataset.armed = '1'; btn.textContent = 'Wirklich löschen?';
+  btn._t = setTimeout(() => { btn.dataset.armed = ''; btn.textContent = 'Löschen'; }, 4000);
+}
+
+$('seg-tank').addEventListener('click', () => { if (editing) endEdit(); modus('tank'); });
+$('seg-lampe').addEventListener('click', () => { if (editing) endEdit(); modus('lampe'); });
+$('t-liter').addEventListener('input', preisHint);
+$('t-betrag').addEventListener('input', preisHint);
+$('f-tank').addEventListener('input', () => msg('t-msg', ''));
+$('f-lampe').addEventListener('input', () => msg('l-msg', ''));
+$('t-cancel').addEventListener('click', () => { endEdit(); leerTank(); msg('t-msg', ''); });
+$('l-cancel').addEventListener('click', () => { endEdit(); leerLampe(); msg('l-msg', ''); });
+
+$('f-tank').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const datum = $('t-datum').value, km = parseKm($('t-km').value), liter = parseDez($('t-liter').value), betrag = parseDez($('t-betrag').value);
+  const f = [];
+  if (!ISO.test(datum)) f.push('Datum wählen.');
+  if (km == null) f.push('Km-Stand als ganze Zahl eintragen.');
+  if (liter == null || liter <= 0 || liter > 150) f.push('Liter eintragen, z. B. 35 oder 12,5.');
+  if (betrag == null || betrag <= 0 || betrag > 1000) f.push('Betrag in Euro eintragen, z. B. 62,40.');
+  if (f.length) { msg('t-msg', f.join(' '), 'err'); return; }
+  const data = { datum, km, liter: Math.round(liter * 100) / 100, betrag: Math.round(betrag * 100) / 100 };
+  const id = editing && editing.typ === 't' ? editing.id : null;
+  const btn = $('t-save'); btn.disabled = true;
+  const ok = await schreiben('tankstopps', id, data, 't-msg');
+  btn.disabled = false;
+  if (ok) { endEdit(); leerTank(); msg('t-msg', id ? 'Änderung gespeichert.' : 'Tankstopp gespeichert.', 'ok'); }
+});
+
+$('f-lampe').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const km = parseKm($('l-km').value), datum = $('l-datum').value;
+  if (km == null) { msg('l-msg', 'Km-Stand als ganze Zahl eintragen.', 'err'); return; }
+  if (datum && !ISO.test(datum)) { msg('l-msg', 'Datum prüfen.', 'err'); return; }
+  const data = { km, datum: datum || null };
+  if (editing && editing.typ === 'l' && editing.orig && editing.orig.ca && editing.orig.km === km) data.ca = true;
+  const id = editing && editing.typ === 'l' ? editing.id : null;
+  const btn = $('l-save'); btn.disabled = true;
+  const ok = await schreiben('lampe', id, data, 'l-msg');
+  btn.disabled = false;
+  if (ok) { endEdit(); leerLampe(); msg('l-msg', id ? 'Änderung gespeichert.' : 'Reserve gespeichert.', 'ok'); }
+});
+
+$('t-del').addEventListener('click', (e) => armDelete(e.currentTarget, async () => {
+  if (!editing || editing.typ !== 't') return;
+  const ok = await entfernen('tankstopps', editing.id, 't-msg');
+  if (ok) { endEdit(); leerTank(); msg('t-msg', 'Tankstopp gelöscht.', 'ok'); }
+}));
+$('l-del').addEventListener('click', (e) => armDelete(e.currentTarget, async () => {
+  if (!editing || editing.typ !== 'l') return;
+  const ok = await entfernen('lampe', editing.id, 'l-msg');
+  if (ok) { endEdit(); leerLampe(); msg('l-msg', 'Reserve gelöscht.', 'ok'); }
+}));
+
+$('log').addEventListener('click', (e) => {
+  const b = e.target.closest('button.item'); if (!b) return;
+  const id = b.dataset.id;
+  if (b.dataset.typ === 't') { const f = rohT.find((x) => x.id === id); if (f) bearbeiteTank(f); }
+  else { const l = rohL.find((x) => x.id === id); if (l) bearbeiteLampe(l); }
+});
+
+$('jetzt').addEventListener('input', () => {
+  const v = $('jetzt').value.trim();
+  jetztKm = v ? parseKm(v) : null;
+  jetztFehler = '';
+  try { window.localStorage.setItem(K_JETZT, JSON.stringify({ km: jetztKm, datum: heute() })); }
+  catch (err) { jetztFehler = 'Wird nicht gemerkt: ' + fehlerText(err); }
+  render();
+});
+
+$('intro-ok').addEventListener('click', () => { merkeMeta('intro', true); renderDaten(); });
+$('ios-aus').addEventListener('click', () => { merkeMeta('iosAus', true); renderDaten(); });
+$('erinnerung-los').addEventListener('click', () => {
+  $('daten').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  $('exp-csv').focus({ preventScroll: true });
+});
+
+/* Export */
+async function liefere(name, text, typ) {
+  const blob = new Blob([text], { type: typ });
+  // iPhone und iPad: Teilen-Menü (z. B. „In Dateien sichern“), weil Downloads dort je nach Version unzuverlässig sind.
+  if (istIOS() && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && typeof File === 'function') {
+    let file = null, kann = false;
+    try { file = new File([blob], name, { type: typ }); kann = navigator.canShare({ files: [file] }); } catch (err) { kann = false; }
+    if (kann) {
+      try { await navigator.share({ files: [file] }); return 'geteilt'; }
+      catch (err) { if (err && err.name === 'AbortError') return 'abgebrochen'; }
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return 'download';
+}
+const zahl = (n) => String(n).replace('.', ',');
+function alsCsv() {
+  const z = [];
+  let aus = 0;
+  rohT.forEach((f) => { if (!okFill(f)) { aus++; return; } z.push({ km: f.km, t: 1, row: ['Tankstopp', datumDe(f.datum), f.km, zahl(f.liter), zahl(f.betrag), ''] }); });
+  rohL.forEach((l) => { if (!okLamp(l)) { aus++; return; } z.push({ km: l.km, t: 0, row: ['Reserve', l.datum ? datumDe(l.datum) : '', l.km, '', '', l.ca ? 'ja' : ''] }); });
+  z.sort((a, b) => a.km - b.km || a.t - b.t);
+  return { text: '﻿' + ['Typ;Datum;Km-Stand;Liter;Betrag;ca'].concat(z.map((x) => x.row.join(';'))).join('\r\n') + '\r\n', aus };
+}
+function alsJson() {
+  return JSON.stringify({ app: 'Tankbuch', format: FORMAT, exportiert: new Date().toISOString(), tankstopps: rohT, lampe: rohL }, null, 2) + '\n';
+}
+async function exportiere(art) {
+  msg('exp-msg', '');
+  if (!rohT.length && !rohL.length) { msg('exp-msg', 'Es gibt noch keine Einträge zum Exportieren.', 'err'); return; }
+  const name = 'tankbuch-' + heute() + '.' + art;
+  let text, aus = 0;
+  if (art === 'csv') { const r = alsCsv(); text = r.text; aus = r.aus; } else text = alsJson();
+  let weg;
+  try { weg = await liefere(name, text, art === 'csv' ? 'text/csv;charset=utf-8' : 'application/json'); }
+  catch (err) { msg('exp-msg', 'Export fehlgeschlagen: ' + (err && err.message ? err.message : 'unbekannter Fehler') + '.', 'err'); return; }
+  if (weg === 'abgebrochen') { msg('exp-msg', 'Export abgebrochen.'); return; }
+  let t = (weg === 'geteilt' ? 'Export „' + name + '“ übergeben.' : 'Export „' + name + '“ erstellt. Du findest ihn in deinen Downloads.');
+  let warn = false;
+  if (aus) { t += ' ' + anzahl(aus, 'unvollständiger Eintrag wurde', 'unvollständige Einträge wurden') + ' nicht in die CSV geschrieben, die JSON-Datei enthält alles.'; warn = true; }
+  const neu = kopie(); neu.meta.exportiert = new Date().toISOString(); neu.meta.neuSeitExport = 0; neu.meta.neuSeit = null;
+  if (!speichern(neu, null)) { t += ' Das Exportdatum ließ sich nicht speichern.'; warn = true; }
+  msg('exp-msg', t, warn ? 'err' : 'ok');
+  renderDaten();
+}
+$('exp-csv').addEventListener('click', () => exportiere('csv'));
+$('exp-json').addEventListener('click', () => exportiere('json'));
+$('vorlage').addEventListener('click', async () => {
+  msg('imp-msg', '');
+  try { await liefere('tankbuch-vorlage.csv', '﻿' + VORLAGE.join('\r\n') + '\r\n', 'text/csv;charset=utf-8'); }
+  catch (err) { msg('imp-msg', 'Die Vorlage ließ sich nicht speichern.', 'err'); }
+});
+$('roh-sichern').addEventListener('click', async () => {
+  if (rohText == null) return;
+  try { await liefere('tankbuch-rohdaten-' + heute() + '.txt', rohText, 'text/plain;charset=utf-8'); hinweis('Rohdaten übergeben.'); }
+  catch (err) { hinweis('Die Rohdaten ließen sich nicht sichern.'); }
+});
+
+/* Import */
+const FELDER = [['', 'nicht verwenden'], ['typ', 'Typ'], ['datum', 'Datum'], ['km', 'Km-Stand'], ['liter', 'Liter'], ['betrag', 'Betrag'], ['ca', 'ca. (ungefähr)']];
+const FELD_NAME = { typ: 'Typ', datum: 'Datum', km: 'Km-Stand', liter: 'Liter', betrag: 'Betrag', ca: 'ca.' };
+
+function csvZeilen(text, trenn) {
+  const out = [];
+  let zellen = [], feld = '', inQ = false, zeile = 1, start = 1, i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { feld += '"'; i += 2; continue; } inQ = false; i++; continue; }
+      if (c === '\n' || (c === '\r' && text[i + 1] !== '\n')) zeile++;
+      feld += c; i++; continue;
+    }
+    if (c === '"' && feld === '') { inQ = true; i++; continue; }
+    if (c === trenn) { zellen.push(feld); feld = ''; i++; continue; }
+    if (c === '\r' || c === '\n') {
+      zellen.push(feld); out.push({ nr: start, zellen }); zellen = []; feld = '';
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      i++; zeile++; start = zeile; continue;
+    }
+    feld += c; i++;
+  }
+  if (feld !== '' || zellen.length) { zellen.push(feld); out.push({ nr: start, zellen }); }
+  return out;
+}
+function erkenneTrenner(text) {
+  const erste = text.split(/\r\n|\n|\r/).find((z) => z.trim() !== '') || '';
+  let s = 0, k = 0, t = 0, inQ = false;
+  for (const c of erste) {
+    if (c === '"') inQ = !inQ;
+    else if (!inQ) { if (c === ';') s++; else if (c === '\t') t++; else if (c === ',') k++; }
+  }
+  return s ? ';' : t ? '\t' : k ? ',' : ';';
+}
+function feldAusKopf(h) {
+  const n = String(h).trim().toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[\s._\-()[\]:\/]/g, '');
+  if (!n) return '';
+  if (/literpreis|preisprol|proliter|eurol$|€l$/.test(n)) return '';
+  if (n.startsWith('typ') || n === 'art' || n === 'eintrag' || n === 'eintragsart') return 'typ';
+  if (n.startsWith('datum') || n === 'date' || n === 'tag') return 'datum';
+  if (n === 'ca' || n === 'circa' || n.startsWith('ungefaehr')) return 'ca';
+  if (n.startsWith('km') || n.startsWith('kilometer') || n.startsWith('tacho') || n === 'stand') return 'km';
+  if (n.startsWith('liter') || n === 'l' || n === 'menge' || n === 'getankt') return 'liter';
+  if (n.startsWith('betrag') || n.startsWith('preis') || n.startsWith('kosten') || n.startsWith('summe') || n === 'euro' || n === 'eur' || n === '€' || n === 'gesamt' || n === 'bezahlt') return 'betrag';
+  return '';
+}
+function parseDatum(s) {
+  const v = String(s).trim().replace(/(\s+|T)\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?Z?$/, '');
+  let y, mo, d, r;
+  if ((r = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v))) { d = +r[1]; mo = +r[2]; y = +r[3]; }
+  else if ((r = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(v))) { y = +r[1]; mo = +r[2]; d = +r[3]; }
+  else return null;
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if (y < 1900 || t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return null;
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+const parseMenge = (s) => parseDez(String(s).replace(/euro|eur|€|liter|ltr|l/gi, ''));
+function parseTyp(s) {
+  const n = String(s).trim().toLowerCase().replace(/[„“"']/g, '').replace(/\s+/g, ' ');
+  if (!n) return '';
+  if (/^(tankstopp|tankstop|tanken|tank|getankt|t)$/.test(n)) return 't';
+  if (/^(reserve|reserve ging an|reservelampe|lampe|r)$/.test(n)) return 'l';
+  return null;
+}
+function parseCa(s) {
+  const n = String(s).trim().toLowerCase();
+  if (!n || ['nein', 'n', '0', 'false', 'falsch'].includes(n)) return false;
+  if (['ja', 'j', 'x', '1', 'true', 'wahr', 'ca', 'ca.', 'yes', 'y'].includes(n)) return true;
+  return null;
+}
+function mapAusKopf(zellen) {
+  const map = zellen.map(feldAusKopf), seen = new Set();
+  return map.map((f) => { if (!f || seen.has(f)) return ''; seen.add(f); return f; });
+}
+function mapStandard(n) {
+  let m = [];
+  if (n >= 5) m = ['typ', 'datum', 'km', 'liter', 'betrag'].concat(n >= 6 ? ['ca'] : []);
+  else if (n === 4) m = ['datum', 'km', 'liter', 'betrag'];
+  while (m.length < n) m.push('');
+  return m;
+}
+
+// Prüft eine CSV-Zeile mit denselben Regeln wie das Formular.
+function werteZeile(zellen, map) {
+  const get = (f) => { const i = map.indexOf(f); return i < 0 ? undefined : String(zellen[i] == null ? '' : zellen[i]).trim(); };
+  const fehler = [], info = [];
+  let typ = 't';
+  const tRoh = get('typ');
+  if (tRoh !== undefined) { const t = parseTyp(tRoh); if (t === null) fehler.push('Typ „' + kurz(tRoh) + '“ unbekannt, erlaubt sind Tankstopp oder Reserve'); else if (t) typ = t; }
+  const kmRoh = get('km');
+  const km = kmRoh ? parseKm(kmRoh.replace(/km/gi, '')) : null;
+  if (kmRoh === undefined) fehler.push('Spalte Km-Stand ist nicht zugeordnet');
+  else if (!kmRoh) fehler.push('Km-Stand fehlt');
+  else if (km == null) fehler.push('Km-Stand „' + kurz(kmRoh) + '“ ist keine ganze Zahl');
+  const dRoh = get('datum');
+  const datum = dRoh ? parseDatum(dRoh) : null;
+  if (dRoh && !datum) fehler.push('Datum „' + kurz(dRoh) + '“ nicht lesbar, erwartet TT.MM.JJJJ oder JJJJ-MM-TT');
+  const caRoh = get('ca');
+  if (typ === 't') {
+    if (dRoh === undefined) fehler.push('Spalte Datum ist nicht zugeordnet');
+    else if (!dRoh) fehler.push('Datum fehlt');
+    const lRoh = get('liter'), bRoh = get('betrag');
+    let liter = null, betrag = null;
+    if (lRoh === undefined) fehler.push('Spalte Liter ist nicht zugeordnet');
+    else if (!lRoh) fehler.push('Liter fehlen');
+    else { liter = parseMenge(lRoh); if (liter == null || liter <= 0 || liter > 150) fehler.push('Liter „' + kurz(lRoh) + '“ ungültig, erlaubt sind mehr als 0 bis 150'); }
+    if (bRoh === undefined) fehler.push('Spalte Betrag ist nicht zugeordnet');
+    else if (!bRoh) fehler.push('Betrag fehlt');
+    else { betrag = parseMenge(bRoh); if (betrag == null || betrag <= 0 || betrag > 1000) fehler.push('Betrag „' + kurz(bRoh) + '“ ungültig, erlaubt sind mehr als 0 bis 1000 €'); }
+    if (fehler.length) return { fehler };
+    if (caRoh && parseCa(caRoh)) info.push('ca. gilt nur für Reserve und wird nicht übernommen');
+    const lr = Math.round(liter * 100) / 100, br = Math.round(betrag * 100) / 100;
+    if (lr !== liter || br !== betrag) info.push('auf zwei Nachkommastellen gerundet');
+    return { typ, eintrag: { datum, km, liter: lr, betrag: br }, info };
+  }
+  let ca = false;
+  if (caRoh !== undefined) { const c = parseCa(caRoh); if (c === null) fehler.push('ca. „' + kurz(caRoh) + '“ unklar, erlaubt sind ja oder leer'); else ca = c; }
+  if (fehler.length) return { fehler };
+  if (get('liter') || get('betrag')) info.push('Liter und Betrag gelten nur für Tankstopps und werden nicht übernommen');
+  const e = { km, datum: datum || null };
+  if (ca) e.ca = true;
+  return { typ, eintrag: e, info };
+}
+
+// Prüft einen Eintrag aus einer JSON-Sicherung.
+function werteJson(x, typ) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return { fehler: ['kein gültiger Eintrag'] };
+  const fehler = [], info = [];
+  const bekannt = typ === 't' ? ['id', 'datum', 'km', 'liter', 'betrag'] : ['id', 'km', 'datum', 'ca'];
+  const fremd = Object.keys(x).filter((k) => !bekannt.includes(k));
+  if (fremd.length) info.push('Feld ' + fremd.map((k) => kurz(k, 16)).join(', ') + ' wird nicht übernommen');
+  const kmOk = Number.isInteger(x.km) && x.km > 0 && x.km <= 9999999;
+  if (!kmOk) fehler.push('Km-Stand ungültig');
+  const id = typeof x.id === 'string' && x.id && x.id.length <= 100 ? x.id : null;
+  if (typ === 't') {
+    if (typeof x.datum !== 'string' || !ISO.test(x.datum) || !parseDatum(x.datum)) fehler.push('Datum ungültig');
+    if (typeof x.liter !== 'number' || !(x.liter > 0 && x.liter <= 150)) fehler.push('Liter ungültig');
+    if (typeof x.betrag !== 'number' || !(x.betrag > 0 && x.betrag <= 1000)) fehler.push('Betrag ungültig');
+    if (fehler.length) return { fehler };
+    const lr = Math.round(x.liter * 100) / 100, br = Math.round(x.betrag * 100) / 100;
+    if (lr !== x.liter || br !== x.betrag) info.push('auf zwei Nachkommastellen gerundet');
+    return { typ, id, eintrag: { datum: x.datum, km: x.km, liter: lr, betrag: br }, info };
+  }
+  if (!(x.datum == null || (typeof x.datum === 'string' && ISO.test(x.datum) && parseDatum(x.datum)))) fehler.push('Datum ungültig');
+  if (!(x.ca === undefined || x.ca === true || x.ca === false)) fehler.push('Feld ca ungültig');
+  if (fehler.length) return { fehler };
+  const e = { km: x.km, datum: x.datum || null };
+  if (x.ca === true) e.ca = true;
+  return { typ, id, eintrag: e, info };
+}
+
+const schluessel = (typ, e) => typ + '|' + (e.datum || '') + '|' + e.km;
+function bewerteImport() {
+  const vorhanden = new Map();
+  rohT.forEach((f) => vorhanden.set(schluessel('t', f), 0));
+  rohL.forEach((l) => vorhanden.set(schluessel('l', l), 0));
+  const erg = { neu: [], doppelt: [], fehler: [] };
+  const nimm = (pos, roh, r) => {
+    if (r.fehler) { erg.fehler.push({ pos, roh, grund: r.fehler.join('; ') }); return; }
+    const k = schluessel(r.typ, r.eintrag);
+    if (vorhanden.has(k)) {
+      const wo = vorhanden.get(k);
+      erg.doppelt.push(Object.assign({ pos, grund: wo ? 'doppelt in der Datei, wie ' + wo : 'schon im Tankbuch' }, r));
+      return;
+    }
+    vorhanden.set(k, pos);
+    erg.neu.push(Object.assign({ pos }, r));
+  };
+  if (imp.art === 'json') {
+    imp.json.tankstopps.forEach((x, i) => nimm('Tankstopp ' + (i + 1), '', werteJson(x, 't')));
+    imp.json.lampe.forEach((x, i) => nimm('Reserve ' + (i + 1), '', werteJson(x, 'l')));
+  } else {
+    const zeilen = imp.kopf ? imp.zeilen.slice(1) : imp.zeilen;
+    zeilen.forEach((z) => nimm('Zeile ' + z.nr, z.zellen.join(' | '), werteZeile(z.zellen, imp.map)));
+  }
+  imp.ergebnis = erg;
+}
+
+function zerlegeCsv(neuErkennen) {
+  imp.zeilen = csvZeilen(imp.text, imp.trenn).filter((z) => z.zellen.some((c) => String(c).trim() !== ''));
+  imp.spalten = imp.zeilen.reduce((mx, z) => Math.max(mx, z.zellen.length), 0);
+  const erste = imp.zeilen.length ? imp.zeilen[0].zellen : [];
+  if (neuErkennen) {
+    imp.kopf = erste.some((c) => feldAusKopf(c)) && !erste.some((c) => parseDatum(c));
+    imp.map = imp.kopf ? mapAusKopf(erste) : mapStandard(imp.spalten);
+  }
+  while (imp.map.length < imp.spalten) imp.map.push('');
+  imp.map.length = imp.spalten;
+}
+
+function starteImport(name, text) {
+  if (editing) endEdit();
+  msg('imp-msg', '');
+  const istJson = /\.json$/i.test(name) || /^\s*[[{]/.test(text);
+  imp = { name, art: istJson ? 'json' : 'csv', text };
+  if (istJson) {
+    let o;
+    try { o = JSON.parse(text); } catch (err) { imp = null; msg('imp-msg', 'Die Datei ist kein gültiges JSON.', 'err'); return; }
+    if (!o || !Array.isArray(o.tankstopps) || !Array.isArray(o.lampe)) { imp = null; msg('imp-msg', 'Die JSON-Datei hat nicht das Format des Tankbuch-Exports, es fehlen „tankstopps“ oder „lampe“.', 'err'); return; }
+    imp.json = o;
+  } else {
+    imp.trenn = erkenneTrenner(text);
+    zerlegeCsv(true);
+    if (!imp.zeilen.length) { imp = null; msg('imp-msg', 'Die Datei enthält keine Zeilen.', 'err'); return; }
+  }
+  zeigeImport();
+  $('imp').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+function schliesseImport() { imp = null; $('imp').hidden = true; $('imp-list').innerHTML = ''; $('imp-map').innerHTML = ''; }
+
+function zeigeImport() {
+  $('imp').hidden = false;
+  $('imp-titel').textContent = 'Vorschau: ' + imp.name;
+  const csv = imp.art === 'csv';
+  $('imp-opts').hidden = !csv; $('imp-map-hint').hidden = !csv; $('imp-map').hidden = !csv;
+  if (csv) {
+    $('imp-trenn').value = imp.trenn === '\t' ? 'tab' : imp.trenn;
+    $('imp-kopf').checked = imp.kopf;
+    const kopfZ = imp.zeilen[0] ? imp.zeilen[0].zellen : [];
+    const bsp = imp.kopf ? imp.zeilen[1] : imp.zeilen[0];
+    let h = '';
+    for (let i = 0; i < imp.spalten; i++) {
+      const titel = 'Spalte ' + (i + 1) + (imp.kopf && kopfZ[i] ? ': „' + kurz(kopfZ[i], 20) + '“' : '');
+      const wert = bsp && bsp.zellen[i] != null ? String(bsp.zellen[i]).trim() : '';
+      h += '<label class="field">' + esc(titel) + '<select data-spalte="' + i + '">' +
+        FELDER.map(([v, t]) => '<option value="' + v + '"' + (imp.map[i] === v ? ' selected' : '') + '>' + t + '</option>').join('') +
+        '</select><small>' + (wert ? 'z. B. ' + esc(kurz(wert, 22)) : 'leer') + '</small></label>';
+    }
+    $('imp-map').innerHTML = h;
+  }
+  zeigeErgebnis();
+}
+
+function zeigeErgebnis() {
+  let mapFehler = '';
+  if (imp.art === 'csv') {
+    const zaehl = {};
+    imp.map.forEach((f) => { if (f) zaehl[f] = (zaehl[f] || 0) + 1; });
+    const mehrfach = Object.keys(zaehl).filter((f) => zaehl[f] > 1);
+    if (mehrfach.length) mapFehler = mehrfach.map((f) => FELD_NAME[f]).join(', ') + ' ist mehreren Spalten zugeordnet. Jedes Feld darf nur einmal vorkommen.';
+    else if (!imp.map.includes('km')) mapFehler = 'Ordne die Spalte mit dem Km-Stand zu.';
+  }
+  $('imp-map-fehler').textContent = mapFehler;
+  bewerteImport();
+  const e = imp.ergebnis;
+  const teile = [anzahl(e.neu.length, 'neuer Eintrag', 'neue Einträge')];
+  if (e.doppelt.length) teile.push(anzahl(e.doppelt.length, 'doppelter Eintrag', 'doppelte Einträge'));
+  if (e.fehler.length) teile.push(anzahl(e.fehler.length, 'fehlerhafte Zeile', 'fehlerhafte Zeilen'));
+  $('imp-sum').textContent = teile.join(' · ') + (e.doppelt.length || e.fehler.length ? '. Doppelte und fehlerhafte werden nicht übernommen.' : '.');
+  const zeile = (r, st, cls) => {
+    const x = r.eintrag;
+    const was = x
+      ? (r.typ === 't' ? 'Tankstopp' : 'Reserve') + ' · ' + (x.datum ? datumDe(x.datum) : 'ohne Datum') + ' · ' + (x.ca ? 'ca. ' : '') + fKm(x.km) + ' km' + (r.typ === 't' ? ' · ' + fL(x.liter) + ' · ' + fEur(x.betrag) : '')
+      : kurz(r.roh || '', 60);
+    const info = r.info && r.info.length ? ' (' + r.info.join('; ') + ')' : '';
+    return '<li><span class="pos">' + esc(r.pos) + '</span>' + esc(was) + '<span class="st ' + cls + '">' + esc(st + info) + '</span></li>';
+  };
+  const MAX = 400;
+  const alle = e.fehler.map((r) => zeile(r, 'Fehler: ' + r.grund, 'fehler'))
+    .concat(e.doppelt.map((r) => zeile(r, 'Nicht übernommen: ' + r.grund, '')))
+    .concat(e.neu.map((r) => zeile(r, 'neu', 'neu')));
+  $('imp-list').innerHTML = alle.slice(0, MAX).join('') + (alle.length > MAX ? '<li>… und ' + (alle.length - MAX) + ' weitere Zeilen</li>' : '');
+  const btn = $('imp-ok');
+  btn.disabled = !!mapFehler || !e.neu.length;
+  btn.textContent = e.neu.length ? anzahl(e.neu.length, 'Eintrag übernehmen', 'Einträge übernehmen') : 'Nichts zu übernehmen';
+}
+
+function uebernehmeImport() {
+  if (!imp || !imp.ergebnis || !imp.ergebnis.neu.length) return;
+  const e = imp.ergebnis;
+  const neu = kopie();
+  const ids = new Set(neu.tankstopps.map((x) => x.id).concat(neu.lampe.map((x) => x.id)));
+  e.neu.forEach((r) => {
+    const id = r.id && !ids.has(r.id) ? r.id : neueId();
+    ids.add(id);
+    (r.typ === 't' ? neu.tankstopps : neu.lampe).push(Object.assign({ id }, r.eintrag));
+  });
+  if (!speichern(neu, 'imp-msg')) return;
+  let t = anzahl(e.neu.length, 'Eintrag', 'Einträge') + ' übernommen.';
+  if (e.doppelt.length || e.fehler.length) t += ' Nicht übernommen: ' + [e.doppelt.length ? anzahl(e.doppelt.length, 'doppelter Eintrag', 'doppelte Einträge') : '', e.fehler.length ? anzahl(e.fehler.length, 'fehlerhafte Zeile', 'fehlerhafte Zeilen') : ''].filter(Boolean).join(' und ') + '.';
+  schliesseImport();
+  dauerhaftAnfragen();
+  render();
+  msg('imp-msg', t, 'ok');
+}
+
+async function liesDatei(file) {
+  const buf = typeof file.arrayBuffer === 'function'
+    ? await file.arrayBuffer()
+    : await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
+  let text;
+  try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (err) { text = new TextDecoder('windows-1252').decode(buf); }
+  return text.replace(/^﻿/, '');
+}
+$('imp-datei').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { msg('imp-msg', 'Die Datei ist größer als 5 MB. Exportiere nur die Tankdaten.', 'err'); return; }
+  let text;
+  try { text = await liesDatei(file); }
+  catch (err) { msg('imp-msg', 'Die Datei ließ sich nicht lesen.', 'err'); return; }
+  starteImport(file.name, text);
+});
+$('imp-trenn').addEventListener('change', () => {
+  if (!imp || imp.art !== 'csv') return;
+  const v = $('imp-trenn').value;
+  imp.trenn = v === 'tab' ? '\t' : v;
+  zerlegeCsv(true);
+  zeigeImport();
+});
+$('imp-kopf').addEventListener('change', () => {
+  if (!imp || imp.art !== 'csv') return;
+  imp.kopf = $('imp-kopf').checked;
+  if (imp.kopf && imp.zeilen[0]) { const m = mapAusKopf(imp.zeilen[0].zellen); if (m.some(Boolean)) imp.map = m; }
+  zerlegeCsv(false);
+  zeigeImport();
+});
+$('imp-map').addEventListener('change', (e) => {
+  const s = e.target.closest('select[data-spalte]'); if (!s || !imp) return;
+  imp.map[Number(s.dataset.spalte)] = s.value;
+  zeigeErgebnis();
+});
+$('imp-ok').addEventListener('click', uebernehmeImport);
+$('imp-abbr').addEventListener('click', () => { schliesseImport(); msg('imp-msg', 'Import abgebrochen, nichts übernommen.'); });
+
+/* Alle Daten löschen */
+$('alles-loeschen').addEventListener('click', () => { msg('loeschen-msg', ''); $('loeschen-frage').hidden = false; $('loeschen-ja').focus(); });
+$('loeschen-nein').addEventListener('click', () => { $('loeschen-frage').hidden = true; $('alles-loeschen').focus(); });
+$('loeschen-ja').addEventListener('click', () => {
+  $('loeschen-frage').hidden = true;
+  let ls;
+  try { ls = window.localStorage; } catch (err) { msg('loeschen-msg', 'Löschen nicht möglich: ' + fehlerText(err), 'err'); return; }
+  const keys = [], offen = [];
+  try { for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && k.indexOf('tankbuch-') === 0) keys.push(k); } }
+  catch (err) { msg('loeschen-msg', 'Löschen nicht möglich: ' + fehlerText(err), 'err'); return; }
+  keys.forEach((k) => { try { ls.removeItem(k); } catch (err) { offen.push(k); } });
+  if (editing) endEdit();
+  schliesseImport();
+  jetztKm = null; jetztFehler = ''; $('jetzt').value = '';
+  leerTank(); leerLampe(); msg('t-msg', ''); msg('l-msg', ''); msg('exp-msg', ''); msg('imp-msg', ''); hinweis('');
+  lade();
+  render();
+  if (offen.length) msg('loeschen-msg', 'Nicht alles ließ sich löschen. Lade die Seite neu und versuch es erneut.', 'err');
+  else msg('loeschen-msg', 'Alle Daten auf diesem Gerät sind gelöscht. Das Tankbuch ist wieder leer.', 'ok');
+});
+
+/* Andere Tabs: Änderungen übernehmen und neu rendern */
+window.addEventListener('storage', (e) => {
+  if (e.key !== null && String(e.key).indexOf('tankbuch-') !== 0) return;
+  if (e.key === K_JETZT) return;
+  lade();
+  if (editing && !(editing.typ === 't' ? rohT : rohL).some((x) => x.id === editing.id)) endEdit();
+  if (imp) zeigeErgebnis();
+  render();
+});
+
+/* Offline: Service Worker. Schlägt die Registrierung fehl (z. B. in einer Vorschau), läuft die App normal weiter. */
+function registriereSW() {
+  try {
+    if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
+    navigator.serviceWorker.register('sw.js').catch((err) => { console.info('Offline-Modus nicht verfügbar:', err && err.message); });
+  } catch (err) { console.info('Offline-Modus nicht verfügbar:', err && err.message); }
+}
+
+function start() {
+  $('t-datum').value = heute(); $('l-datum').value = heute();
+  try {
+    const s = JSON.parse(window.localStorage.getItem(K_JETZT) || 'null');
+    if (s && s.datum === heute() && Number.isFinite(s.km)) { jetztKm = s.km; $('jetzt').value = String(s.km); }
+  } catch (err) { jetztKm = null; }
+  lade();
+  render();
+  persistStand();
+  if (document.readyState === 'complete') registriereSW(); else window.addEventListener('load', registriereSW);
+}
+start();
+})();
+</script>
+</body>
+</html>
