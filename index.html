@@ -154,17 +154,18 @@ input:disabled{opacity:.55}
 .banner .btn{min-height:40px;padding:8px 14px;font-size:14px}
 .intro p{margin:0;max-width:62ch}
 .install p{margin:0;max-width:62ch}
-.install .spalten{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
-@media (min-width:560px){.install .spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.install .schritte{display:flex;flex-direction:column;gap:0;min-width:0}
-.install h3{margin:0 0 6px;font-size:15px;font-weight:700}
-.install details{border-top:1px solid var(--line);padding:2px 0}
-.install details:last-of-type{border-bottom:1px solid var(--line)}
-.install summary{cursor:pointer;font-weight:600;font-size:15px;min-height:42px;display:flex;align-items:center}
+.install .systeme{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.install details.system{border-bottom:1px solid var(--line)}
+.install details.system > summary{cursor:pointer;font-weight:700;font-size:16px;min-height:50px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.install details.system > summary small{font-size:13px;font-weight:400;color:var(--muted)}
+.install .browser{display:flex;flex-direction:column;padding:0 0 12px 14px;border-left:2px solid var(--line);margin:0 0 12px 6px}
+.install .browser details{border-top:1px solid var(--line)}
+.install .browser details:last-of-type{border-bottom:1px solid var(--line)}
+.install .browser summary{cursor:pointer;font-weight:600;font-size:15px;min-height:44px;display:flex;align-items:center}
 .install summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .install ol{margin:0 0 10px;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;max-width:62ch}
 .install details .hint{margin:0 0 10px}
-.install .schritte > .hint{margin-top:10px}
+.install .browser > .hint{margin-top:10px}
 .daten p{margin:0}
 .daten .wichtig{font-size:15px;color:var(--ink);max-width:62ch}
 .vh{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
@@ -185,6 +186,11 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .imp-list .st{display:block;font-size:13px;color:var(--muted)}
 .imp-list .st.neu{color:var(--good)}
 .imp-list .st.fehler{color:var(--danger)}
+.daten .teil{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.daten h3{margin:0;font-size:15px;font-weight:700}
+.imp-text{display:flex;flex-direction:column;gap:10px}
+textarea{font:inherit;font-size:16px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-width:0;min-height:10em;resize:vertical;line-height:1.45;font-variant-numeric:tabular-nums}
+textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .foot{display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .foot p{margin:0;max-width:62ch}
 </style>
@@ -208,16 +214,17 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   <section class="panel intro" id="intro" aria-labelledby="h-intro" hidden>
     <h2 class="eyebrow" id="h-intro">So funktioniert das Tankbuch</h2>
     <p>Ein Tankstopp ist jeder Tankvorgang mit Datum, Km-Stand, getankten Litern und Betrag, egal ob voll oder nur teilweise. „Reserve ging an“ trägst du ein, sobald die Reservelampe aufleuchtet, mit dem Km-Stand in diesem Moment. Bei jeder Reservelampe ist der Tank gleich leer, deshalb entsprechen die Liter, die du zwischen zwei Lampen tankst, genau deinem Verbrauch auf dieser Strecke. Das ist genauer als eine Schätzung aus einzelnen Tankstopps und klappt ohne Volltanken.</p>
-    <div class="actions"><button type="button" class="btn primary" id="intro-ok">Verstanden</button></div>
+    <div class="actions"><button type="button" class="btn primary" id="intro-ok">Verstanden</button><button type="button" class="btn" id="intro-import">Bisheriges Tankbuch übernehmen</button></div>
   </section>
 
   <section class="panel install" id="install" aria-labelledby="h-install" hidden>
     <h2 class="eyebrow" id="h-install">Als App auf den Home-Bildschirm</h2>
-    <p>Mit dem Symbol auf dem Home-Bildschirm öffnest du das Tankbuch wie eine App, auch ohne Netz. Auf dem iPhone schützt das außerdem deine Einträge: Safari löscht die Daten einer Seite, die du an sieben Tagen Safari-Nutzung nicht öffnest. Die App auf dem Home-Bildschirm ist davon ausgenommen.</p>
+    <p>Tippe auf dein Gerät und dann auf deinen Browser. Mit dem Symbol auf dem Home-Bildschirm öffnest du das Tankbuch wie eine App, auch ohne Netz. Auf dem iPhone schützt das außerdem deine Einträge: Safari löscht die Daten einer Seite, die du an sieben Tagen Safari-Nutzung nicht öffnest. Die App auf dem Home-Bildschirm ist davon ausgenommen.</p>
     <div class="actions" id="install-knopf" hidden><button type="button" class="btn primary" id="install-btn">App installieren</button></div>
-    <div class="spalten">
-      <div class="schritte" id="install-ios">
-        <h3>iPhone und iPad</h3>
+    <div class="systeme">
+      <details class="system" id="install-ios">
+        <summary>Apple <small>iPhone und iPad</small></summary>
+        <div class="browser">
         <details data-browser="safari">
           <summary>Safari</summary>
           <ol>
@@ -250,9 +257,11 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
           </ol>
         </details>
         <p class="hint">Öffne das Tankbuch danach nur noch über das Symbol. Die App hat einen eigenen Speicher, Einträge aus dem Browser nimmst du per Export und Import mit.</p>
-      </div>
-      <div class="schritte" id="install-android">
-        <h3>Android</h3>
+        </div>
+      </details>
+      <details class="system" id="install-android">
+        <summary>Android <small>Samsung, Google Pixel, Xiaomi und andere</small></summary>
+        <div class="browser">
         <details data-browser="chrome">
           <summary>Chrome</summary>
           <ol>
@@ -286,7 +295,8 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
           </ol>
         </details>
         <p class="hint">Je nach Version heißen die Menüpunkte leicht anders. Ein Symbol oder ein Hinweis „Installieren“ in der Adressleiste führt ebenfalls ans Ziel.</p>
-      </div>
+        </div>
+      </details>
     </div>
     <div class="actions"><button type="button" class="btn" id="install-spaeter">Später</button></div>
   </section>
@@ -368,23 +378,29 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   <section class="panel daten" id="daten" aria-labelledby="h-daten">
     <h2 class="eyebrow" id="h-daten">Daten und Sicherung</h2>
     <p class="wichtig"><b>Deine Einträge liegen nur auf diesem Gerät</b>, in diesem Browser. Es gibt kein Konto und keine Kopie im Netz. Löschst du die Browserdaten oder wechselst du das Gerät, sind sie weg, außer du hast sie exportiert.</p>
-    <p class="hint" id="export-stand"></p>
-    <p class="hint" id="persist-stand" hidden></p>
-    <div class="actions">
-      <button type="button" class="btn" id="exp-csv">Export als CSV</button>
-      <button type="button" class="btn" id="exp-json">Export als JSON</button>
-    </div>
-    <p class="msg" id="exp-msg" role="status"></p>
-    <div class="actions">
-      <input type="file" id="imp-datei" class="vh" accept=".csv,.json,.txt,text/csv,application/json,text/plain">
-      <label class="btn" for="imp-datei">Import aus Datei</label>
-      <button type="button" class="btn" id="vorlage">CSV-Vorlage</button>
-    </div>
-    <p class="hint">Import aus Notizen oder Excel als CSV mit den Spalten Typ (Tankstopp oder Reserve), Datum, Km-Stand, Liter und Betrag, oder eine JSON-Datei aus dem Export. Fehlt die Spalte Typ, gilt jede Zeile als Tankstopp. Ersetze in der Vorlage die zwei Beispielzeilen durch deine Daten.</p>
+    <div class="teil" id="uebernehmen">
+      <h3>Bisheriges Tankbuch übernehmen</h3>
+      <p class="hint">Aus deinen Notizen, aus Excel oder von einem Screenshot. Das Tankbuch liest alles direkt auf diesem Gerät aus, nichts wird hochgeladen. Vor dem Übernehmen siehst du eine Vorschau.</p>
+      <div class="actions">
+        <button type="button" class="btn" id="imp-text-btn">Text einfügen</button>
+        <input type="file" id="imp-bild" class="vh" accept="image/*" multiple>
+        <label class="btn" for="imp-bild">Screenshot oder Foto</label>
+        <input type="file" id="imp-datei" class="vh" accept=".csv,.json,.txt,.xlsx,text/csv,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        <label class="btn" for="imp-datei">Datei: Excel oder CSV</label>
+      </div>
+      <div class="imp-text" id="imp-text" hidden>
+        <label class="field">Text aus deinen Notizen<textarea id="imp-textfeld" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="z. B.&#10;03.08.2026  48020 km  25 l  43,50 €&#10;24.08.2026  Reserve bei 48655 km&#10;05.09.  48990  12,00  21,36"></textarea></label>
+        <p class="hint">Am besten eine Zeile pro Tankstopp mit Datum, Km-Stand, Litern und Betrag, die Reihenfolge ist egal. Zeilen mit „Reserve“ oder „Lampe“ werden zu „Reserve ging an“. Ein Literpreis wie „1,859 €/l“ wird verrechnet.</p>
+        <p class="msg" id="imp-ocr" role="status"></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="imp-text-ok">Einträge erkennen</button>
+          <button type="button" class="btn" id="imp-text-zu">Schließen</button>
+        </div>
+      </div>
     <div class="imp" id="imp" hidden>
       <h3 id="imp-titel"></h3>
       <div class="row2" id="imp-opts">
-        <label class="field">Trennzeichen<select id="imp-trenn"><option value=";">Semikolon ( ; )</option><option value=",">Komma ( , )</option><option value="tab">Tabulator</option></select></label>
+        <label class="field" id="imp-trenn-feld">Trennzeichen<select id="imp-trenn"><option value=";">Semikolon ( ; )</option><option value=",">Komma ( , )</option><option value="tab">Tabulator</option></select></label>
         <label class="check"><input type="checkbox" id="imp-kopf">Erste Zeile ist Kopfzeile</label>
       </div>
       <p class="hint" id="imp-map-hint">Prüfe, was in jeder Spalte steht, und ändere die Zuordnung, falls nötig.</p>
@@ -397,7 +413,20 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
         <button type="button" class="btn" id="imp-abbr">Abbrechen</button>
       </div>
     </div>
-    <p class="msg" id="imp-msg" role="status"></p>
+      <p class="msg" id="imp-msg" role="status"></p>
+      <p class="hint">Excel und CSV: Spalten Typ (Tankstopp oder Reserve), Datum, Km-Stand, Liter und Betrag. Fehlt die Spalte Typ, gilt jede Zeile als Tankstopp. Bei Excel zählt die erste Tabelle der Datei.</p>
+      <div class="actions"><button type="button" class="btn" id="vorlage">Leere CSV-Vorlage</button></div>
+    </div>
+    <div class="teil">
+      <h3>Sichern</h3>
+      <p class="hint" id="export-stand"></p>
+      <p class="hint" id="persist-stand" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn" id="exp-csv">Export als CSV</button>
+        <button type="button" class="btn" id="exp-json">Export als JSON</button>
+      </div>
+      <p class="msg" id="exp-msg" role="status"></p>
+    </div>
     <p class="hint" id="install-stand"></p>
     <div class="actions" id="install-hilfe-zeile"><button type="button" class="btn" id="install-hilfe">Anleitung: Als App installieren</button></div>
     <div class="actions"><button type="button" class="btn danger" id="alles-loeschen">Alle Daten löschen</button></div>
@@ -414,7 +443,7 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   <!-- TEXTENTWURF Datenschutz und Impressum: rechtlich nicht geprüft. Vor dem Teilen des Links prüfen und den Platzhalter ausfüllen. -->
   <footer class="foot" aria-labelledby="h-foot">
     <h2 class="eyebrow" id="h-foot">Datenschutz</h2>
-    <p>Das Tankbuch speichert deine Einträge nur im Speicher deines Browsers auf diesem Gerät, zusammen mit einer zufälligen Gerätekennung, die das Gerät nicht verlässt. Es überträgt keine Einträge an den Betreiber oder an Dritte, setzt keine Cookies, nutzt kein Tracking und keine Werbung und lädt nichts von fremden Servern.</p>
+    <p>Das Tankbuch speichert deine Einträge nur im Speicher deines Browsers auf diesem Gerät, zusammen mit einer zufälligen Gerätekennung, die das Gerät nicht verlässt. Dateien und Screenshots für den Import liest es nur auf dem Gerät aus. Es überträgt keine Einträge an den Betreiber oder an Dritte, setzt keine Cookies, nutzt kein Tracking und keine Werbung und lädt nichts von fremden Servern.</p>
     <p>Der Hoster dieser Seite (GitHub Pages der GitHub Inc.) speichert beim Aufruf technisch bedingt Zugriffsprotokolle, zum Beispiel IP-Adresse, Zeitpunkt und abgerufene Datei.</p>
     <p>Impressum: [Name, Anschrift und Kontakt des Betreibers ergänzen]</p>
   </footer>
@@ -834,21 +863,9 @@ function istIOS() { const ua = navigator.userAgent || ''; return /iPad|iPhone|iP
 function istAndroid() { return /Android/i.test(navigator.userAgent || ''); }
 function istStandalone() { return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
 let installEvent = null, installZeigen = false;
-function browserKennung() {
-  const ua = navigator.userAgent || '';
-  if (istIOS()) return /CriOS/.test(ua) ? 'chrome-ios' : /FxiOS/.test(ua) ? 'firefox-ios' : /EdgiOS/.test(ua) ? 'edge-ios' : 'safari';
-  if (istAndroid()) return /SamsungBrowser/.test(ua) ? 'samsung' : /Firefox/.test(ua) ? 'firefox' : /EdgA/.test(ua) ? 'edge' : 'chrome';
-  return '';
-}
-function oeffneEigenenBrowser() {
-  const k = browserKennung();
-  const d = k && document.querySelector('#install details[data-browser="' + k + '"]');
-  if (d) d.open = true;
-}
 function renderInstall() {
-  const ios = istIOS(), android = istAndroid(), app = istStandalone();
+  const app = istStandalone();
   $('install').hidden = app || (!!daten.meta.installAus && !installZeigen);
-  $('install-android').style.order = android ? '-1' : '';
   $('install-knopf').hidden = !installEvent;
   $('install-hilfe-zeile').hidden = app;
   $('install-stand').textContent = app
@@ -994,6 +1011,7 @@ $('jetzt').addEventListener('input', () => {
 });
 
 $('intro-ok').addEventListener('click', () => { merkeMeta('intro', true); renderDaten(); });
+$('intro-import').addEventListener('click', () => { $('uebernehmen').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); });
 $('install-spaeter').addEventListener('click', () => { installZeigen = false; merkeMeta('installAus', true); renderDaten(); });
 $('install-hilfe').addEventListener('click', () => {
   installZeigen = true; renderInstall();
@@ -1247,6 +1265,8 @@ function bewerteImport() {
   if (imp.art === 'json') {
     imp.json.tankstopps.forEach((x, i) => nimm('Tankstopp ' + (i + 1), '', werteJson(x, 't')));
     imp.json.lampe.forEach((x, i) => nimm('Reserve ' + (i + 1), '', werteJson(x, 'l')));
+  } else if (imp.art === 'text') {
+    imp.textErg.forEach((x) => nimm(x.pos, x.roh, x.erg));
   } else {
     const zeilen = imp.kopf ? imp.zeilen.slice(1) : imp.zeilen;
     zeilen.forEach((z) => nimm('Zeile ' + z.nr, z.zellen.join(' | '), werteZeile(z.zellen, imp.map)));
@@ -1255,7 +1275,7 @@ function bewerteImport() {
 }
 
 function zerlegeCsv(neuErkennen) {
-  imp.zeilen = csvZeilen(imp.text, imp.trenn).filter((z) => z.zellen.some((c) => String(c).trim() !== ''));
+  imp.zeilen = (imp.art === 'tabelle' ? imp.rowsRoh : csvZeilen(imp.text, imp.trenn)).filter((z) => z.zellen.some((c) => String(c).trim() !== ''));
   imp.spalten = imp.zeilen.reduce((mx, z) => Math.max(mx, z.zellen.length), 0);
   const erste = imp.zeilen.length ? imp.zeilen[0].zellen : [];
   if (neuErkennen) {
@@ -1289,10 +1309,11 @@ function schliesseImport() { imp = null; $('imp').hidden = true; $('imp-list').i
 function zeigeImport() {
   $('imp').hidden = false;
   $('imp-titel').textContent = 'Vorschau: ' + imp.name;
-  const csv = imp.art === 'csv';
+  const csv = imp.art === 'csv' || imp.art === 'tabelle';
   $('imp-opts').hidden = !csv; $('imp-map-hint').hidden = !csv; $('imp-map').hidden = !csv;
+  $('imp-trenn-feld').hidden = imp.art !== 'csv';
   if (csv) {
-    $('imp-trenn').value = imp.trenn === '\t' ? 'tab' : imp.trenn;
+    if (imp.art === 'csv') $('imp-trenn').value = imp.trenn === '\t' ? 'tab' : imp.trenn;
     $('imp-kopf').checked = imp.kopf;
     const kopfZ = imp.zeilen[0] ? imp.zeilen[0].zellen : [];
     const bsp = imp.kopf ? imp.zeilen[1] : imp.zeilen[0];
@@ -1311,7 +1332,7 @@ function zeigeImport() {
 
 function zeigeErgebnis() {
   let mapFehler = '';
-  if (imp.art === 'csv') {
+  if (imp.art === 'csv' || imp.art === 'tabelle') {
     const zaehl = {};
     imp.map.forEach((f) => { if (f) zaehl[f] = (zaehl[f] || 0) + 1; });
     const mehrfach = Object.keys(zaehl).filter((f) => zaehl[f] > 1);
@@ -1356,29 +1377,46 @@ function uebernehmeImport() {
   if (!speichern(neu, 'imp-msg')) return;
   let t = anzahl(e.neu.length, 'Eintrag', 'Einträge') + ' übernommen.';
   if (e.doppelt.length || e.fehler.length) t += ' Nicht übernommen: ' + [e.doppelt.length ? anzahl(e.doppelt.length, 'doppelter Eintrag', 'doppelte Einträge') : '', e.fehler.length ? anzahl(e.fehler.length, 'fehlerhafte Zeile', 'fehlerhafte Zeilen') : ''].filter(Boolean).join(' und ') + '.';
+  if (!rohL.length) t += ' Für die Prognose fehlt noch ein Eintrag „Reserve ging an“.';
   schliesseImport();
+  $('imp-text').hidden = true; msg('imp-ocr', '');
   dauerhaftAnfragen();
   render();
   msg('imp-msg', t, 'ok');
 }
 
-async function liesDatei(file) {
-  const buf = typeof file.arrayBuffer === 'function'
-    ? await file.arrayBuffer()
-    : await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
+async function liesPuffer(file) {
+  return typeof file.arrayBuffer === 'function'
+    ? file.arrayBuffer()
+    : new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
+}
+function dekodiere(buf) {
   let text;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
   catch (err) { text = new TextDecoder('windows-1252').decode(buf); }
-  return text.replace(/^﻿/, '');
+  return text.replace(/^\uFEFF/, '');
 }
 $('imp-datei').addEventListener('change', async (e) => {
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  msg('imp-msg', '');
+  if (/\.numbers$/i.test(file.name)) { msg('imp-msg', 'Numbers-Dateien kann das Tankbuch nicht lesen. Exportiere die Tabelle in Numbers als Excel oder CSV.', 'err'); return; }
+  if (/\.xls$/i.test(file.name)) { msg('imp-msg', 'Das alte Excel-Format .xls kann das Tankbuch nicht lesen. Speichere die Tabelle als .xlsx oder CSV.', 'err'); return; }
   if (file.size > 5 * 1024 * 1024) { msg('imp-msg', 'Die Datei ist größer als 5 MB. Exportiere nur die Tankdaten.', 'err'); return; }
-  let text;
-  try { text = await liesDatei(file); }
+  let buf;
+  try { buf = await liesPuffer(file); }
   catch (err) { msg('imp-msg', 'Die Datei ließ sich nicht lesen.', 'err'); return; }
+  const kopf = new Uint8Array(buf, 0, Math.min(2, buf.byteLength));
+  if (/\.xlsx$/i.test(file.name) || (kopf[0] === 0x50 && kopf[1] === 0x4b)) {
+    let zeilen;
+    try { zeilen = await liesXlsx(buf); }
+    catch (err) { msg('imp-msg', err && err.message === 'kein-entpacken' ? 'Dieser Browser kann Excel-Dateien nicht öffnen. Speichere die Tabelle als CSV.' : 'Die Excel-Datei ließ sich nicht lesen. Speichere sie als CSV und versuch es erneut.', 'err'); return; }
+    starteImportTabelle(file.name, zeilen);
+    return;
+  }
+  const text = dekodiere(buf);
+  if (/\.txt$/i.test(file.name)) { $('imp-textfeld').value = text; $('imp-text').hidden = false; starteImportText(text, file.name); return; }
   starteImport(file.name, text);
 });
 $('imp-trenn').addEventListener('change', () => {
@@ -1389,7 +1427,7 @@ $('imp-trenn').addEventListener('change', () => {
   zeigeImport();
 });
 $('imp-kopf').addEventListener('change', () => {
-  if (!imp || imp.art !== 'csv') return;
+  if (!imp || (imp.art !== 'csv' && imp.art !== 'tabelle')) return;
   imp.kopf = $('imp-kopf').checked;
   if (imp.kopf && imp.zeilen[0]) { const m = mapAusKopf(imp.zeilen[0].zellen); if (m.some(Boolean)) imp.map = m; }
   zerlegeCsv(false);
@@ -1402,6 +1440,333 @@ $('imp-map').addEventListener('change', (e) => {
 });
 $('imp-ok').addEventListener('click', uebernehmeImport);
 $('imp-abbr').addEventListener('click', () => { schliesseImport(); msg('imp-msg', 'Import abgebrochen, nichts übernommen.'); });
+
+/* Import aus Text: Notizen, eingefügte Tabellen und Screenshots (nach der Texterkennung) */
+const MONATE = { jan: 1, feb: 2, 'mär': 3, mrz: 3, mar: 3, apr: 4, mai: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dez: 12 };
+const TXT_FELDER = ['datum', 'km', 'liter', 'betrag', 'ppl'];
+const TXT_MAP = ['typ', 'datum', 'km', 'liter', 'betrag', 'ca'];
+function txtZahl(roh, art) {
+  let v = String(roh).replace(/\s/g, '');
+  if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.');
+  else if (art === 'km' || /^\d{2,3}(\.\d{3})+$/.test(v) || /^\d(\.\d{3}){2,}$/.test(v)) v = v.replace(/\./g, '');
+  const n = Number(v);
+  return v !== '' && Number.isFinite(n) ? n : null;
+}
+function txtDatum(tag, monat, jahr, ctx) {
+  let y = jahr ? Number(jahr) : null;
+  if (y != null && y < 100) y += 2000;
+  const ohneJahr = y == null;
+  if (ohneJahr) y = ctx.jahr || new Date().getFullYear();
+  const iso = parseDatum(y + '-' + monat + '-' + tag);
+  if (!iso) return null;
+  if (ohneJahr && iso > heute()) return parseDatum((y - 1) + '-' + monat + '-' + tag);
+  if (!ohneJahr) ctx.jahr = y;
+  return iso;
+}
+function textKopf(zeile) {
+  if (/\d/.test(zeile)) return null;
+  const felder = [];
+  zeile.toLowerCase().split(/[\s;,|\t]+/).filter(Boolean).forEach((w) => {
+    let f = '';
+    if (/^(datum|date|tag)$/.test(w)) f = 'datum';
+    else if (/^(km|km-stand|kmstand|kilometer|kilometerstand|tacho|tachostand|stand)$/.test(w)) f = 'km';
+    else if (/^(literpreis|€\/l|eur\/l|preis\/l)$/.test(w)) f = 'ppl';
+    else if (/^(liter|l|menge|getankt)$/.test(w)) f = 'liter';
+    else if (/^(betrag|summe|kosten|bezahlt|gesamt|euro|eur|€)$/.test(w)) f = 'betrag';
+    else if (w === 'preis') f = 'preis';
+    if (f && !felder.includes(f)) felder.push(f);
+  });
+  return felder.length >= 2 ? felder : null;
+}
+function textZeile(zeile, ctx) {
+  const t = {};
+  let s = ' ' + zeile.replace(/ /g, ' ') + ' ';
+  let m;
+  const raus = () => { s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length); };
+  if (/reserve|tanklampe|lampe|leuchte/i.test(s)) t.reserve = true;
+  s = s.replace(/\b(?:e5|e10|e85|b7|b10|hvo100|super\s*plus|super|diesel|v-power)\b/gi, ' ').replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, ' ');
+  if ((m = /(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))) { const d = txtDatum(m[3], m[2], m[1], ctx); if (d) { t.datum = d; raus(); } }
+  else if ((m = /(^|[^\d.,])(\d{1,2})\.\s?(jan|feb|mär|mrz|mar|apr|mai|jun|jul|aug|sep|okt|nov|dez)[a-zä]*\.?(?:\s*(\d{4}))?/i.exec(s))) { const d = txtDatum(m[2], MONATE[m[3].toLowerCase()], m[4], ctx); if (d) { t.datum = d; raus(); } }
+  else if ((m = /(^|[^\d.,])(\d{1,2})([./])(\d{1,2})\3(\d{4}|\d{2})?(?![\d,]|\.\d)/.exec(s))) { const d = txtDatum(m[2], m[4], m[5], ctx); if (d) { t.datum = d; raus(); } }
+  if ((m = /(\d[.,]\d{2,3})\s*(?:€|eur|euro)?\s*\/\s*(?:l|ltr|liter)(?![a-zä])/i.exec(s)) || (m = /(?:literpreis|preis\s*\/\s*l|€\s*\/\s*l)\s*[:=]?\s*(\d[.,]\d{2,3})/i.exec(s))) { t.ppl = txtZahl(m[1]); raus(); }
+  if ((m = /(\d{1,3}(?:[.\s]\d{3})+|\d{3,7})\s*km(?![a-zä])/i.exec(s)) || (m = /(?:km|kilometer|tacho)(?:-?stand)?\s*[:=]?\s*(\d{1,3}(?:[.\s]\d{3})+|\d{3,7})(?![\d,])/i.exec(s))) { t.km = txtZahl(m[1], 'km'); raus(); }
+  if ((m = /(\d+(?:[.,]\d+)?)\s*(?:l|ltr|liter)(?![a-zä])/i.exec(s)) || (m = /(?:liter|menge|getankt)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i.exec(s))) { t.liter = txtZahl(m[1]); raus(); }
+  if ((m = /(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur|euro)(?![a-z])/i.exec(s)) || (m = /(?:€|eur|euro|betrag|summe|kosten|bezahlt|gesamt)\s*[:=]?\s*(\d+(?:[.,]\d{1,2})?)(?!\d)/i.exec(s))) { t.betrag = txtZahl(m[1]); raus(); }
+  if (t.betrag == null && (m = /preis\s*[:=]?\s*(\d+(?:[.,]\d{1,3})?)/i.exec(s))) { const v = txtZahl(m[1]); if (v != null) { if (v <= 4 && t.ppl == null) t.ppl = v; else t.betrag = v; } raus(); }
+  const rest = [];
+  const re = /\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/g;
+  while ((m = re.exec(s))) rest.push(m[0]);
+  const nichtsSonst = !TXT_FELDER.some((f) => t[f] != null) && !t.reserve;
+  if (nichtsSonst && rest.length === 1 && /^(19|20)\d\d$/.test(rest[0])) { ctx.jahr = Number(rest[0]); return t; }
+  if (ctx.kopf) {
+    const offen = ctx.kopf.filter((f) => f !== 'datum' && !(f === 'preis' ? (t.betrag != null || t.ppl != null) : t[f] != null));
+    for (const f of offen) {
+      if (!rest.length) break;
+      const v = txtZahl(rest.shift(), f === 'km' ? 'km' : '');
+      if (v == null) continue;
+      if (f === 'preis') { if (v <= 4) t.ppl = v; else t.betrag = v; } else t[f] = v;
+    }
+    return t;
+  }
+  const werte = rest.map((r) => ({ r, v: txtZahl(r) })).filter((x) => x.v != null);
+  if (t.km == null) {
+    let best = -1;
+    werte.forEach((x, i) => { if (Number.isInteger(x.v) && x.v >= 1000 && (best < 0 || x.v > werte[best].v)) best = i; });
+    if (best >= 0) { t.km = werte[best].v; werte.splice(best, 1); }
+  }
+  if (t.ppl == null) {
+    const i = werte.findIndex((x) => /^\d[.,]\d{3}$/.test(x.r) && x.v >= 0.8 && x.v <= 4);
+    if (i >= 0) { t.ppl = werte[i].v; werte.splice(i, 1); }
+  }
+  const kand = werte.filter((x) => x.v > 0 && x.v < 1000).map((x) => x.v);
+  const passt = (l, e) => e / l >= 0.8 && e / l <= 4;
+  if (t.liter == null && t.betrag == null && kand.length >= 2) {
+    const a = kand[0], b = kand[1];
+    if (passt(a, b) && !passt(b, a)) { t.liter = a; t.betrag = b; }
+    else if (passt(b, a) && !passt(a, b)) { t.liter = b; t.betrag = a; }
+    else if (passt(a, b)) { t.liter = Math.min(a, b); t.betrag = Math.max(a, b); }
+    else { t.liter = a; t.betrag = b; t.pruefen = true; }
+  } else if (t.liter == null && t.betrag != null && kand.length) t.liter = kand[0];
+  else if (t.betrag == null && t.liter != null && kand.length) t.betrag = kand[0];
+  return t;
+}
+function textEintraege(text) {
+  const ctx = { jahr: null, kopf: null };
+  const recs = [];
+  let cur = null;
+  const zu = () => { if (cur) recs.push(cur); cur = null; };
+  const voll = (r) => r.km != null && (r.reserve && r.liter == null && r.betrag == null ? true : r.datum != null && r.liter != null && (r.betrag != null || r.ppl != null));
+  String(text).replace(/\r\n?/g, '\n').split('\n').forEach((z, i) => {
+    const roh = z.trim();
+    if (!roh) { zu(); return; }
+    const k = textKopf(roh);
+    if (k) { zu(); ctx.kopf = k; return; }
+    const t = textZeile(roh, ctx);
+    const hat = TXT_FELDER.some((f) => t[f] != null);
+    if (!hat) {
+      if (t.reserve && cur) { cur.reserve = true; cur.bis = i + 1; cur.roh.push(roh); return; }
+      if (/\d/.test(roh) && !/^(19|20)\d\d$/.test(roh.replace(/\D/g, ''))) { zu(); recs.push({ von: i + 1, bis: i + 1, roh: [roh], leer: true }); }
+      return;
+    }
+    const konflikt = !cur || voll(cur) || TXT_FELDER.some((f) => cur[f] != null && t[f] != null);
+    if (!konflikt) {
+      TXT_FELDER.forEach((f) => { if (t[f] != null) cur[f] = t[f]; });
+      if (t.reserve) cur.reserve = true;
+      if (t.pruefen) cur.pruefen = true;
+      cur.bis = i + 1; cur.roh.push(roh);
+    } else { zu(); cur = Object.assign({ von: i + 1, bis: i + 1, roh: [roh] }, t); }
+  });
+  zu();
+  const aus = [];
+  const zelle = (v) => (v == null ? '' : String(v));
+  recs.forEach((r) => {
+    const pos = 'Zeile ' + r.von + (r.bis > r.von ? '–' + r.bis : '');
+    const roh = r.roh.join(' / ');
+    if (r.leer) { aus.push({ pos, roh, erg: { fehler: ['keine Angaben erkannt'] } }); return; }
+    const info = [];
+    if (r.ppl != null) {
+      if (r.liter != null && r.betrag == null) { r.betrag = Math.round(r.liter * r.ppl * 100) / 100; info.push('Betrag aus dem Literpreis berechnet'); }
+      else if (r.betrag != null && r.liter == null) { r.liter = Math.round(r.betrag / r.ppl * 100) / 100; info.push('Liter aus dem Literpreis berechnet'); }
+    }
+    if (r.pruefen) info.push('Liter und Betrag bitte prüfen');
+    const tank = r.liter != null || r.betrag != null;
+    if (r.reserve) {
+      const erg = werteZeile(['Reserve', zelle(r.datum), zelle(r.km), '', '', tank ? 'ja' : ''], TXT_MAP);
+      if (!erg.fehler && tank) erg.info = (erg.info || []).concat(['Reserve ungefähr beim Tankstopp angenommen']);
+      aus.push({ pos, roh, erg });
+      if (!tank) return;
+    }
+    const erg = werteZeile(['Tankstopp', zelle(r.datum), zelle(r.km), zelle(r.liter), zelle(r.betrag), ''], TXT_MAP);
+    if (!erg.fehler && info.length) erg.info = (erg.info || []).concat(info);
+    aus.push({ pos, roh, erg });
+  });
+  return aus;
+}
+function starteImportText(text, name) {
+  if (editing) endEdit();
+  msg('imp-msg', '');
+  const erg = textEintraege(text);
+  if (!erg.length) { msg('imp-ocr', 'Im Text wurden keine Tankstopps gefunden. Eine Zeile sollte Datum, Km-Stand, Liter und Betrag enthalten.', 'err'); return; }
+  imp = { name, art: 'text', textErg: erg };
+  zeigeImport();
+  $('imp').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+
+/* Import aus Excel (.xlsx): erste Tabelle, direkt im Browser entpackt */
+async function liesXlsx(buf) {
+  if (typeof DecompressionStream !== 'function') throw new Error('kein-entpacken');
+  const u8 = new Uint8Array(buf), dv = new DataView(buf), td = new TextDecoder();
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+  if (eocd < 0) throw new Error('kein-zip');
+  const dateien = {};
+  let p = dv.getUint32(eocd + 16, true);
+  for (let k = 0, n = dv.getUint16(eocd + 10, true); k < n && p + 46 <= u8.length; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), kl = dv.getUint16(p + 32, true);
+    dateien[td.decode(u8.subarray(p + 46, p + 46 + nl))] = { methode: dv.getUint16(p + 10, true), groesse: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + nl + xl + kl;
+  }
+  const lies = async (name) => {
+    const f = dateien[name];
+    if (!f) return null;
+    const start = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true);
+    const roh = u8.subarray(start, start + f.groesse);
+    if (f.methode === 0) return td.decode(roh);
+    if (f.methode !== 8) throw new Error('zip-methode');
+    return new Response(new Blob([roh]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+  const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
+  const alle = (doc, name) => Array.from(doc.getElementsByTagNameNS('*', name));
+  const wbText = await lies('xl/workbook.xml');
+  if (!wbText) throw new Error('kein-excel');
+  const wb = xml(wbText);
+  const pr = alle(wb, 'workbookPr')[0];
+  const d1904 = !!pr && /^(1|true)$/.test(pr.getAttribute('date1904') || '');
+  let ziel = 'xl/worksheets/sheet1.xml';
+  const blatt = alle(wb, 'sheet')[0];
+  const rid = blatt && (blatt.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') || blatt.getAttribute('r:id'));
+  const relsText = await lies('xl/_rels/workbook.xml.rels');
+  if (rid && relsText) {
+    alle(xml(relsText), 'Relationship').forEach((r) => {
+      if (r.getAttribute('Id') !== rid) return;
+      const t = r.getAttribute('Target') || '';
+      ziel = t.startsWith('/') ? t.slice(1) : 'xl/' + t.replace(/^\.\//, '');
+    });
+  }
+  const ss = [];
+  const ssText = await lies('xl/sharedStrings.xml');
+  if (ssText) alle(xml(ssText), 'si').forEach((si) => ss.push(alle(si, 't').map((t) => t.textContent).join('')));
+  const datumsStil = [];
+  const stText = await lies('xl/styles.xml');
+  if (stText) {
+    const st = xml(stText), eigene = {};
+    alle(st, 'numFmt').forEach((nf) => { eigene[nf.getAttribute('numFmtId')] = nf.getAttribute('formatCode') || ''; });
+    const xfs = alle(st, 'cellXfs')[0];
+    if (xfs) alle(xfs, 'xf').forEach((xf) => {
+      const id = Number(xf.getAttribute('numFmtId') || 0), code = eigene[id];
+      datumsStil.push((id >= 14 && id <= 22) || (id >= 45 && id <= 47) || (code != null && /[dmy]/i.test(code.replace(/"[^"]*"|\[[^\]]*\]|\\./g, ''))));
+    });
+  }
+  const wsText = await lies(ziel);
+  if (!wsText) throw new Error('kein-blatt');
+  const serie = (n) => new Date((d1904 ? Date.UTC(1904, 0, 1) : Date.UTC(1899, 11, 30)) + Math.floor(n) * 86400000).toISOString().slice(0, 10);
+  const zeilen = [];
+  alle(xml(wsText), 'row').forEach((row) => {
+    const zellen = [];
+    alle(row, 'c').forEach((c) => {
+      const mm = /^([A-Z]+)/.exec(c.getAttribute('r') || '');
+      let col = zellen.length;
+      if (mm) { col = 0; for (const ch of mm[1]) col = col * 26 + ch.charCodeAt(0) - 64; col -= 1; }
+      const typ = c.getAttribute('t'), stil = Number(c.getAttribute('s') || 0);
+      const v = alle(c, 'v')[0], wert = v ? v.textContent : '';
+      let out = '';
+      if (typ === 's') out = ss[Number(wert)] || '';
+      else if (typ === 'inlineStr') out = alle(c, 't').map((t) => t.textContent).join('');
+      else if (typ === 'str' || typ === 'e') out = wert;
+      else if (typ === 'b') out = wert === '1' ? 'ja' : '';
+      else if (typ === 'd') out = wert.slice(0, 10);
+      else if (wert !== '') { const n = Number(wert); out = Number.isFinite(n) ? (datumsStil[stil] ? serie(n) : String(n)) : wert; }
+      zellen[col] = out;
+    });
+    for (let i = 0; i < zellen.length; i++) if (zellen[i] == null) zellen[i] = '';
+    zeilen.push({ nr: Number(row.getAttribute('r')) || zeilen.length + 1, zellen });
+  });
+  return zeilen;
+}
+function starteImportTabelle(name, zeilen) {
+  if (editing) endEdit();
+  msg('imp-msg', '');
+  imp = { name, art: 'tabelle', rowsRoh: zeilen };
+  zerlegeCsv(true);
+  if (!imp.zeilen.length) { imp = null; msg('imp-msg', 'Die erste Tabelle der Datei ist leer.', 'err'); return; }
+  zeigeImport();
+  $('imp').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+
+/* Texterkennung für Screenshots und Fotos: läuft komplett im Browser, Dateien liegen unter ocr/ */
+let ocrSkript = null;
+function ladeOcr() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (!ocrSkript) ocrSkript = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'ocr/tesseract.min.js';
+    sc.onload = () => (window.Tesseract ? res(window.Tesseract) : rej(new Error('Texterkennung nicht verfügbar')));
+    sc.onerror = () => { ocrSkript = null; sc.remove(); rej(new Error('Texterkennung ließ sich nicht laden, prüfe die Verbindung')); };
+    document.head.appendChild(sc);
+  });
+  return ocrSkript;
+}
+function simdDa() {
+  try { return typeof WebAssembly === 'object' && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
+  catch (err) { return false; }
+}
+async function bildVorbereiten(file) {
+  if (typeof createImageBitmap !== 'function') return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const f = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    if (f >= 1) { if (bmp.close) bmp.close(); return file; }
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    return c;
+  } catch (err) { return file; }
+}
+async function erkenneBilder(files, status) {
+  const T = await ladeOcr();
+  const basis = new URL('ocr/', location.href).href;
+  let nr = 0;
+  const worker = await T.createWorker('deu', 1, {
+    workerPath: basis + 'worker.min.js',
+    workerBlobURL: false,
+    corePath: basis + (simdDa() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'),
+    langPath: basis,
+    logger: (m) => {
+      if (!m || typeof m.progress !== 'number') return;
+      const pz = Math.round(m.progress * 100) + ' %';
+      if (m.status === 'recognizing text') status('Bild ' + nr + ' von ' + files.length + ' wird gelesen: ' + pz);
+      else status('Texterkennung wird vorbereitet: ' + pz);
+    }
+  });
+  const texte = [];
+  try {
+    for (const f of files) {
+      nr++;
+      const r = await worker.recognize(await bildVorbereiten(f));
+      texte.push((r && r.data && r.data.text) || '');
+    }
+  } finally { await worker.terminate(); }
+  return texte.join('\n\n');
+}
+$('imp-text-btn').addEventListener('click', () => { $('imp-text').hidden = false; msg('imp-ocr', ''); $('imp-textfeld').focus(); });
+$('imp-text-zu').addEventListener('click', () => { $('imp-text').hidden = true; msg('imp-ocr', ''); });
+$('imp-text-ok').addEventListener('click', () => {
+  const t = $('imp-textfeld').value;
+  if (!t.trim()) { msg('imp-ocr', 'Füge zuerst den Text aus deinen Notizen ein.', 'err'); return; }
+  msg('imp-ocr', '');
+  starteImportText(t, 'Text aus Notizen oder Screenshot');
+});
+$('imp-bild').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if (!files.length) return;
+  $('imp-text').hidden = false;
+  const knopf = $('imp-text-ok');
+  knopf.disabled = true;
+  msg('imp-ocr', 'Texterkennung wird geladen. Beim ersten Mal sind das etwa 5 MB.');
+  $('imp-text').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  try {
+    const text = (await erkenneBilder(files, (t) => msg('imp-ocr', t))).trim();
+    if (!text) { msg('imp-ocr', 'Auf dem Bild wurde kein Text erkannt. Probier einen schärferen Screenshot oder füge den Text direkt ein.', 'err'); return; }
+    const feld = $('imp-textfeld');
+    feld.value = (feld.value.trim() ? feld.value.replace(/\s+$/, '') + '\n\n' : '') + text;
+    msg('imp-ocr', 'Text erkannt. Prüf kurz die Zahlen, korrigier falsch gelesene Stellen und tippe dann auf „Einträge erkennen“.', 'ok');
+  } catch (err) {
+    msg('imp-ocr', 'Die Texterkennung hat nicht geklappt: ' + (err && err.message ? err.message : 'unbekannter Fehler') + '. Du kannst den Text auch kopieren und einfügen.', 'err');
+  } finally { knopf.disabled = false; }
+});
 
 /* Alle Daten löschen */
 $('alles-loeschen').addEventListener('click', () => { msg('loeschen-msg', ''); $('loeschen-frage').hidden = false; $('loeschen-ja').focus(); });
@@ -1416,6 +1781,7 @@ $('loeschen-ja').addEventListener('click', () => {
   keys.forEach((k) => { try { ls.removeItem(k); } catch (err) { offen.push(k); } });
   if (editing) endEdit();
   schliesseImport();
+  $('imp-textfeld').value = ''; $('imp-text').hidden = true; msg('imp-ocr', '');
   jetztKm = null; jetztFehler = ''; $('jetzt').value = '';
   leerTank(); leerLampe(); msg('t-msg', ''); msg('l-msg', ''); msg('exp-msg', ''); msg('imp-msg', ''); hinweis('');
   lade();
@@ -1449,7 +1815,6 @@ function start() {
     if (s && s.datum === heute() && Number.isFinite(s.km)) { jetztKm = s.km; $('jetzt').value = String(s.km); }
   } catch (err) { jetztKm = null; }
   lade();
-  oeffneEigenenBrowser();
   render();
   persistStand();
   if (document.readyState === 'complete') registriereSW(); else window.addEventListener('load', registriereSW);
