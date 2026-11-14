@@ -2,7 +2,7 @@
    Einträge liegen nicht hier, sondern im Browser-Speicher der Seite.
    Bei jeder neuen Version VERSION erhöhen, dann räumt der Browser den alten Speicher auf. */
 'use strict';
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'tankbuch-' + VERSION;
 const DATEIEN = [
   './',

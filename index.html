@@ -153,6 +153,10 @@ input:disabled{opacity:.55}
 .banner.err p{color:var(--danger)}
 .banner .btn{min-height:40px;padding:8px 14px;font-size:14px}
 .intro p{margin:0;max-width:62ch}
+.install p{margin:0;max-width:62ch}
+.install .schritte{display:flex;flex-direction:column;gap:8px}
+.install h3{margin:0;font-size:15px;font-weight:600}
+.install ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;max-width:62ch}
 .daten p{margin:0}
 .daten .wichtig{font-size:15px;color:var(--ink);max-width:62ch}
 .vh{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
@@ -192,15 +196,36 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
     <p id="erinnerung-text"></p>
     <div class="actions"><button type="button" class="btn" id="erinnerung-los">Zum Export</button></div>
   </div>
-  <div class="banner" id="ios-tipp" hidden>
-    <p>Tipp fürs iPhone: Safari kann Website-Daten löschen, wenn du die Seite länger nicht nutzt. Als App auf dem Home-Bildschirm ist das Risiko geringer. Tippe dazu auf Teilen und dann auf „Zum Home-Bildschirm“. Die App dort hat einen eigenen Speicher, Einträge aus Safari nimmst du per Export und Import mit.</p>
-    <div class="actions"><button type="button" class="btn" id="ios-aus">Ausblenden</button></div>
-  </div>
 
   <section class="panel intro" id="intro" aria-labelledby="h-intro" hidden>
     <h2 class="eyebrow" id="h-intro">So funktioniert das Tankbuch</h2>
     <p>Ein Tankstopp ist jeder Tankvorgang mit Datum, Km-Stand, getankten Litern und Betrag, egal ob voll oder nur teilweise. „Reserve ging an“ trägst du ein, sobald die Reservelampe aufleuchtet, mit dem Km-Stand in diesem Moment. Bei jeder Reservelampe ist der Tank gleich leer, deshalb entsprechen die Liter, die du zwischen zwei Lampen tankst, genau deinem Verbrauch auf dieser Strecke. Das ist genauer als eine Schätzung aus einzelnen Tankstopps und klappt ohne Volltanken.</p>
     <div class="actions"><button type="button" class="btn primary" id="intro-ok">Verstanden</button></div>
+  </section>
+
+  <section class="panel install" id="install" aria-labelledby="h-install" hidden>
+    <h2 class="eyebrow" id="h-install">Als App auf den Home-Bildschirm</h2>
+    <p>Mit dem Symbol auf dem Home-Bildschirm öffnest du das Tankbuch wie eine App, auch ohne Netz. Auf dem iPhone schützt das außerdem deine Einträge: Safari löscht die Daten einer Seite, die du an sieben Tagen Safari-Nutzung nicht öffnest. Die App auf dem Home-Bildschirm ist davon ausgenommen.</p>
+    <div class="actions" id="install-knopf" hidden><button type="button" class="btn primary" id="install-btn">App installieren</button></div>
+    <div class="schritte" id="install-ios">
+      <h3>iPhone und iPad</h3>
+      <ol>
+        <li>Öffne diese Seite in Safari.</li>
+        <li>Tippe auf das Teilen-Symbol, das Quadrat mit dem Pfeil nach oben. In neueren iOS-Versionen liegt es hinter „•••“.</li>
+        <li>Wähle „Zum Home-Bildschirm“. Falls du es nicht siehst, scrolle im Menü nach unten.</li>
+        <li>Tippe auf „Hinzufügen“. Das Tankbuch-Symbol liegt jetzt auf deinem Home-Bildschirm.</li>
+      </ol>
+      <p class="hint">Öffne das Tankbuch danach nur noch über das Symbol. Die App hat einen eigenen Speicher, Einträge aus Safari nimmst du per Export und Import mit.</p>
+    </div>
+    <div class="schritte" id="install-android">
+      <h3>Android</h3>
+      <ol>
+        <li>Öffne diese Seite in Chrome.</li>
+        <li>Tippe oben rechts auf das Menü ⋮.</li>
+        <li>Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“ und bestätige.</li>
+      </ol>
+    </div>
+    <div class="actions"><button type="button" class="btn" id="install-spaeter">Später</button></div>
   </section>
 
   <section class="panel" aria-labelledby="h-add">
@@ -310,7 +335,8 @@ select:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
       </div>
     </div>
     <p class="msg" id="imp-msg" role="status"></p>
-    <p class="hint">iPhone: Safari kann Website-Daten nach längerer Nichtnutzung löschen. Als App auf dem Home-Bildschirm ist das Risiko geringer, deshalb in Safari über Teilen „Zum Home-Bildschirm“ wählen.</p>
+    <p class="hint" id="install-stand"></p>
+    <div class="actions" id="install-hilfe-zeile"><button type="button" class="btn" id="install-hilfe">Anleitung: Als App installieren</button></div>
     <div class="actions"><button type="button" class="btn danger" id="alles-loeschen">Alle Daten löschen</button></div>
     <div class="banner err" id="loeschen-frage" hidden>
       <p>Alle Einträge auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen. Exportiere vorher, wenn du sie behalten willst.</p>
@@ -469,7 +495,7 @@ const kurz = (s, n) => { const t = String(s); const max = n || 24; return t.leng
 const anzahl = (n, eins, mehr) => n + ' ' + (n === 1 ? eins : mehr);
 
 function leererStand() {
-  return { format: FORMAT, tankstopps: [], lampe: [], meta: { exportiert: null, neuSeitExport: 0, neuSeit: null, intro: false, iosAus: false } };
+  return { format: FORMAT, tankstopps: [], lampe: [], meta: { exportiert: null, neuSeitExport: 0, neuSeit: null, intro: false, installAus: false } };
 }
 function setzeStand(d) { daten = d; rohT = d.tankstopps; rohL = d.lampe; }
 function kopie() { return JSON.parse(JSON.stringify(daten)); }
@@ -740,13 +766,26 @@ function zeileLampe(r, m) {
     '<span class="c-wide"><b>Reserve an bei ' + (l.ca ? 'ca. ' : '') + fKm(l.km) + ' km</b><small>' + teile.join(' · ') + '</small></span></button></li>';
 }
 
-/* Hinweise: Erststart, iPhone, Export-Erinnerung */
+/* Hinweise: Erststart, Installation, Export-Erinnerung */
 function istIOS() { const ua = navigator.userAgent || ''; return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function istAndroid() { return /Android/i.test(navigator.userAgent || ''); }
 function istStandalone() { return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
+let installEvent = null, installZeigen = false;
+function renderInstall() {
+  const ios = istIOS(), android = istAndroid(), app = istStandalone();
+  $('install').hidden = app || (!!daten.meta.installAus && !installZeigen);
+  $('install-ios').hidden = android;
+  $('install-android').hidden = ios;
+  $('install-knopf').hidden = !installEvent;
+  $('install-hilfe-zeile').hidden = app;
+  $('install-stand').textContent = app
+    ? 'Du nutzt das Tankbuch als App vom Home-Bildschirm.'
+    : 'Auf dem iPhone löscht Safari die Daten einer Seite, die du an sieben Tagen Safari-Nutzung nicht öffnest. Als App auf dem Home-Bildschirm gilt das nicht.';
+}
 function renderDaten() {
   const meta = daten.meta, n = meta.neuSeitExport || 0;
   $('intro').hidden = !!meta.intro;
-  $('ios-tipp').hidden = !(istIOS() && !istStandalone() && !meta.iosAus);
+  renderInstall();
   const ref = meta.exportiert ? Date.parse(meta.exportiert) : meta.neuSeit;
   const alt = Number.isFinite(ref) && Date.now() - ref > 30 * TAG_MS;
   const tage = Number.isFinite(ref) ? Math.floor((Date.now() - ref) / TAG_MS) : 0;
@@ -882,7 +921,20 @@ $('jetzt').addEventListener('input', () => {
 });
 
 $('intro-ok').addEventListener('click', () => { merkeMeta('intro', true); renderDaten(); });
-$('ios-aus').addEventListener('click', () => { merkeMeta('iosAus', true); renderDaten(); });
+$('install-spaeter').addEventListener('click', () => { installZeigen = false; merkeMeta('installAus', true); renderDaten(); });
+$('install-hilfe').addEventListener('click', () => {
+  installZeigen = true; renderInstall();
+  $('install').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+});
+// Android und Chrome am Computer: eigener Knopf statt der kleinen Browser-Leiste
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvent = e; renderInstall(); });
+window.addEventListener('appinstalled', () => { installEvent = null; renderInstall(); hinweis('Das Tankbuch ist installiert. Öffne es ab jetzt über das Symbol.'); });
+$('install-btn').addEventListener('click', async () => {
+  const ev = installEvent; if (!ev) return;
+  try { ev.prompt(); await ev.userChoice; }
+  catch (err) { hinweis('Installieren hat nicht geklappt. Nutze die Schritte unten.'); }
+  installEvent = null; renderInstall();
+});
 $('erinnerung-los').addEventListener('click', () => {
   $('daten').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   $('exp-csv').focus({ preventScroll: true });
