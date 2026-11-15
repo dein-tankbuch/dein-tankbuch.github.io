@@ -1043,9 +1043,9 @@ function jetztHinweis(refKm, m) {
       if (m.status === 'prognose') ergebnis = gefahren + 'bis zur Reserve noch ≈ ' + fKm(m.rest) + ' km';
       else if (m.status === 'faellig') ergebnis = gefahren + 'Reserve laut Rechnung fällig';
     }
-    h.textContent = ergebnis || (jetztKm != null ? 'Prognose ab heute.' : 'Optional, für eine Prognose ab heute.'); h.classList.remove('warn');
+    h.textContent = ergebnis || 'Optional, für eine Prognose ab heute.'; h.classList.remove('warn');
   }
-  if (jetztFehler) { h.textContent += ' ' + jetztFehler; h.classList.add('warn'); }
+  if (jetztFehler) { h.textContent += (h.textContent.endsWith('.') ? ' ' : '. ') + jetztFehler; h.classList.add('warn'); }
   $('jetzt-heute').hidden = !(jetztHeute && jetztKm != null);
   // Hervorhebung nur, wenn der Nutzer im Feld einen neuen gültigen Wert eingibt
   const neu = ergebnis && m.jetztKm !== hlKm && document.activeElement === $('jetzt');
