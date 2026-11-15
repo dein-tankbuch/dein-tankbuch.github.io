@@ -90,6 +90,9 @@ sup{font-size:.6em;line-height:0;vertical-align:.62em;margin-left:.04em}
 .now{display:grid;grid-template-columns:auto minmax(0,10.5em);justify-content:start;align-items:center;gap:6px 12px;margin-top:18px}
 .now label{font-weight:600;font-size:14px}
 .now .hint{grid-column:1/-1}
+.lead,#jetzt-hint{border-radius:4px;transition:background-color .4s ease,box-shadow .4s ease}
+.lead.hl,#jetzt-hint.hl{background:var(--lamp-soft);box-shadow:0 0 0 4px var(--lamp-soft)}
+@media (prefers-reduced-motion:reduce){.lead,#jetzt-hint{transition:none}}
 .basis{list-style:none;margin:16px 0 0;padding:12px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .basis:empty{display:none}
 
@@ -413,6 +416,7 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
       <label for="jetzt">Km-Stand jetzt</label>
       <input id="jetzt" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done">
       <p class="hint" id="jetzt-hint">Optional, für eine Prognose ab heute.</p>
+      <p class="hint" id="jetzt-heute" hidden>Heute schon eingetragen</p>
     </div>
     <ul class="basis" id="basis"></ul>
   </section>
@@ -884,6 +888,7 @@ let persistGefragt = false;
 let editing = null;
 let jetztKm = null;
 let jetztFehler = '';
+let jetztHeute = false;
 let imp = null;
 
 const linien = (arr) => arr.filter(Boolean).map((t) => '<li>' + t + '</li>').join('');
@@ -1026,14 +1031,33 @@ function renderMeta(m) {
     : 'Verbrauch, Kosten und die nächste Reserve';
 }
 
-function jetztHinweis(refKm) {
+let hlKm = null, hlTimer = 0;
+function jetztHinweis(refKm, m) {
   const h = $('jetzt-hint');
+  let ergebnis = '';
   if (jetztKm != null && jetztKm < refKm && String(jetztKm).length >= String(refKm).length) {
     h.textContent = 'Kleiner als beim letzten Eintrag (' + fKm(refKm) + ' km).'; h.classList.add('warn');
   } else {
-    h.textContent = jetztKm != null ? 'Prognose ab heute.' : 'Optional, für eine Prognose ab heute.'; h.classList.remove('warn');
+    if (m && m.jetztKm != null) {
+      const gefahren = 'Seit dem Tanken gefahren: ' + fKm(m.jetztKm - m.startKm) + ' km · ';
+      if (m.status === 'prognose') ergebnis = gefahren + 'bis zur Reserve noch ≈ ' + fKm(m.rest) + ' km';
+      else if (m.status === 'faellig') ergebnis = gefahren + 'Reserve laut Rechnung fällig';
+    }
+    h.textContent = ergebnis || (jetztKm != null ? 'Prognose ab heute.' : 'Optional, für eine Prognose ab heute.'); h.classList.remove('warn');
   }
   if (jetztFehler) { h.textContent += ' ' + jetztFehler; h.classList.add('warn'); }
+  $('jetzt-heute').hidden = !(jetztHeute && jetztKm != null);
+  // Hervorhebung nur, wenn der Nutzer im Feld einen neuen gültigen Wert eingibt
+  const neu = ergebnis && m.jetztKm !== hlKm && document.activeElement === $('jetzt');
+  hlKm = ergebnis ? m.jetztKm : null;
+  if (neu) {
+    const els = [$('lead'), h];
+    clearTimeout(hlTimer);
+    els.forEach((el) => el.classList.remove('hl'));
+    void h.offsetWidth;
+    els.forEach((el) => el.classList.add('hl'));
+    hlTimer = setTimeout(() => els.forEach((el) => el.classList.remove('hl')), 1000);
+  }
 }
 
 function renderHero(m) {
@@ -1076,7 +1100,7 @@ function renderHero(m) {
     big.textContent = 'Reserve fällig'; big.classList.add('is-lamp');
     lead.textContent = 'Laut Rechnung bei ca. ' + fKm(m.lampKm) + ' km, also vor ca. ' + fKm(-m.rest) + ' km.';
   }
-  jetztHinweis(m.startKm);
+  jetztHinweis(m.startKm, m);
   let tempo = '';
   if (m.status === 'prognose' && m.datumVon) {
     tempo = m.rateRecent && m.rateAvg
@@ -1584,6 +1608,7 @@ $('jetzt').addEventListener('input', () => {
   const v = $('jetzt').value.trim();
   jetztKm = v ? parseKm(v) : null;
   jetztFehler = '';
+  jetztHeute = false;
   try { window.localStorage.setItem(K_JETZT, JSON.stringify({ km: jetztKm, datum: heute() })); }
   catch (err) { jetztFehler = 'Wird nicht gemerkt: ' + fehlerText(err); }
   render();
@@ -2471,7 +2496,7 @@ function start() {
   $('t-datum').value = heute(); $('l-datum').value = heute();
   try {
     const s = JSON.parse(window.localStorage.getItem(K_JETZT) || 'null');
-    if (s && s.datum === heute() && Number.isFinite(s.km)) { jetztKm = s.km; $('jetzt').value = String(s.km); }
+    if (s && s.datum === heute() && Number.isFinite(s.km)) { jetztKm = s.km; $('jetzt').value = String(s.km); jetztHeute = true; }
   } catch (err) { jetztKm = null; }
   lade();
   render();
