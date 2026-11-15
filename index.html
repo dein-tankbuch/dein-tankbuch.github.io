@@ -151,7 +151,7 @@ input:disabled{opacity:.55}
 .banner p{margin:0}
 .banner.err{background:var(--surface);border:1px solid var(--danger)}
 .banner.err p{color:var(--danger)}
-.banner .btn{min-height:40px;padding:8px 14px;font-size:14px}
+.banner .btn{min-height:44px;padding:8px 14px;font-size:14px}
 .intro p{margin:0;max-width:62ch}
 .install p{margin:0;max-width:62ch}
 .install .systeme{display:flex;flex-direction:column;border-top:1px solid var(--line)}
@@ -193,6 +193,29 @@ textarea{font:inherit;font-size:16px;font-weight:500;color:var(--ink);background
 textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .foot{display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .foot p{margin:0;max-width:62ch}
+</style>
+<style>
+/* Version 5: zwei gleichwertige Eingabewege (Foto und Eintippen), Markierung von Foto-Werten, Warnungen */
+.wege{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wege .btn{width:100%;text-align:center}
+.wege .btn[aria-expanded="true"]{background:var(--track)}
+.foto{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.foto .actions label.btn{flex:1 1 0;justify-content:center;background:var(--surface)}
+.galerie{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;font-size:14px;color:var(--muted)}
+.galerie label{font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+.wege label.btn{justify-content:center}
+.sperre:empty{display:none}
+.vh:disabled + label{opacity:.5;cursor:not-allowed}
+.vh:focus-visible + label{outline:2px solid var(--amber);outline-offset:2px}
+input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
+.foto-tag{font-size:12px;font-weight:600;color:var(--amber)}
+.wahl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.wahl .hint{flex-basis:100%}
+.wahl .btn{min-height:44px;padding:8px 12px;font-size:14px}
+.wahl .btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.msg.warn{color:var(--amber);font-weight:600}
+#t-foto-msg:empty,#l-foto-msg:empty{display:none}
+.seg button{min-height:44px}
 </style>
 </head>
 <body>
@@ -311,13 +334,28 @@ textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
     </div>
     <form id="f-tank" novalidate>
       <p class="edit-note" id="t-edit" hidden></p>
+      <div class="wege">
+        <input type="file" id="t-kam" class="vh" accept="image/*" capture="environment" data-form="t" data-foto="auto">
+        <label class="btn" for="t-kam" id="t-weg-foto">Per Foto</label>
+        <button type="button" class="btn" id="t-weg-tippen">Selbst eintippen</button>
+      </div>
+      <p class="hint" id="t-foto-hint">Quittung und Tacho zusammen oder einzeln fotografieren. Das Foto wird nur auf diesem Gerät gelesen und nicht gespeichert, beim ersten Mal lädt die Texterkennung einmalig ca. 5 MB.</p>
+      <p class="galerie">Bild aus der Galerie:
+        <input type="file" id="t-gal" class="vh" accept="image/*" multiple data-form="t" data-foto="auto"><label for="t-gal">Ein oder mehrere Bilder</label></p>
+      <p class="msg warn sperre" id="t-sperre" role="status"></p>
+      <p class="msg" id="t-foto-msg" role="status"></p>
+      <div class="actions" id="t-weiter" hidden>
+        <input type="file" id="t-kam-weiter" class="vh" accept="image/*" capture="environment" data-form="t" data-foto="auto">
+        <label class="btn" for="t-kam-weiter">Weiteres Foto</label>
+      </div>
+      <div class="wahl" id="t-wahl" hidden></div>
       <div class="row2">
-        <label class="field">Datum<input id="t-datum" type="date"></label>
-        <label class="field">Km-Stand<input id="t-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48250"></label>
+        <label class="field">Datum<input id="t-datum" type="date"><small class="foto-tag" id="t-datum-tag" hidden></small></label>
+        <label class="field">Km-Stand<input id="t-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48250"><small class="foto-tag" id="t-km-tag" hidden></small></label>
       </div>
       <div class="row2">
-        <label class="field">Liter<input id="t-liter" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 35,5"></label>
-        <label class="field">Betrag (€)<input id="t-betrag" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 62,40"></label>
+        <label class="field">Liter<input id="t-liter" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 35,5"><small class="foto-tag" id="t-liter-tag" hidden></small></label>
+        <label class="field">Betrag (€)<input id="t-betrag" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 62,40"><small class="foto-tag" id="t-betrag-tag" hidden></small></label>
       </div>
       <p class="hint" id="t-preis">Der Literpreis wird daraus berechnet.</p>
       <div class="actions">
@@ -329,9 +367,24 @@ textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
     </form>
     <form id="f-lampe" novalidate hidden>
       <p class="edit-note" id="l-edit" hidden></p>
+      <div class="wege">
+        <input type="file" id="l-kam-tacho" class="vh" accept="image/*" capture="environment" data-form="l" data-foto="tacho">
+        <label class="btn" for="l-kam-tacho" id="l-weg-foto">Per Foto</label>
+        <button type="button" class="btn" id="l-weg-tippen">Selbst eintippen</button>
+      </div>
+      <p class="hint">Per Foto öffnet die Kamera für den Tacho. Das Foto wird nur auf diesem Gerät gelesen, beim ersten Mal lädt die Texterkennung einmalig ca. 5 MB.</p>
+      <p class="galerie">Bild aus der Galerie:
+        <input type="file" id="l-gal-tacho" class="vh" accept="image/*" multiple data-form="l" data-foto="tacho"><label for="l-gal-tacho">Ein oder mehrere Bilder</label></p>
+      <p class="msg warn sperre" id="l-sperre" role="status"></p>
+      <p class="msg" id="l-foto-msg" role="status"></p>
+      <div class="actions" id="l-weiter" hidden>
+        <input type="file" id="l-kam-weiter" class="vh" accept="image/*" capture="environment" data-form="l" data-foto="tacho">
+        <label class="btn" for="l-kam-weiter">Weiteres Foto</label>
+      </div>
+      <div class="wahl" id="l-wahl" hidden></div>
       <div class="row2">
-        <label class="field">Km-Stand<input id="l-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48600"></label>
-        <label class="field">Datum<input id="l-datum" type="date"></label>
+        <label class="field">Km-Stand<input id="l-km" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 48600"><small class="foto-tag" id="l-km-tag" hidden></small></label>
+        <label class="field">Datum<input id="l-datum" type="date"><small class="foto-tag" id="l-datum-tag" hidden></small></label>
       </div>
       <p class="hint">Der Km-Stand, bei dem die Reservelampe anging. Von Reserve zu Reserve misst das Tankbuch deinen Verbrauch genau, auch ohne Volltanken.</p>
       <div class="actions">
@@ -388,6 +441,7 @@ textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
         <input type="file" id="imp-datei" class="vh" accept=".csv,.json,.txt,.xlsx,text/csv,application/json,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
         <label class="btn" for="imp-datei">Datei: Excel oder CSV</label>
       </div>
+      <p class="msg warn sperre" id="imp-sperre" role="status"></p>
       <div class="imp-text" id="imp-text" hidden>
         <label class="field">Text aus deinen Notizen<textarea id="imp-textfeld" rows="8" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="z. B.&#10;03.08.2026  48020 km  25 l  43,50 €&#10;24.08.2026  Reserve bei 48655 km&#10;05.09.  48990  12,00  21,36"></textarea></label>
         <p class="hint">Am besten eine Zeile pro Tankstopp mit Datum, Km-Stand, Litern und Betrag, die Reihenfolge ist egal. Zeilen mit „Reserve“ oder „Lampe“ werden zu „Reserve ging an“. Ein Literpreis wie „1,859 €/l“ wird verrechnet.</p>
@@ -443,7 +497,7 @@ textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
   <!-- TEXTENTWURF Datenschutz und Impressum: rechtlich nicht geprüft. Vor dem Teilen des Links prüfen und den Platzhalter ausfüllen. -->
   <footer class="foot" aria-labelledby="h-foot">
     <h2 class="eyebrow" id="h-foot">Datenschutz</h2>
-    <p>Das Tankbuch speichert deine Einträge nur im Speicher deines Browsers auf diesem Gerät, zusammen mit einer zufälligen Gerätekennung, die das Gerät nicht verlässt. Dateien und Screenshots für den Import liest es nur auf dem Gerät aus. Es überträgt keine Einträge an den Betreiber oder an Dritte, setzt keine Cookies, nutzt kein Tracking und keine Werbung und lädt nichts von fremden Servern.</p>
+    <p>Das Tankbuch speichert deine Einträge nur im Speicher deines Browsers auf diesem Gerät, zusammen mit einer zufälligen Gerätekennung, die das Gerät nicht verlässt. Dateien und Screenshots für den Import liest es nur auf dem Gerät aus. Fotos von Quittung oder Tacho liest es ebenfalls nur auf dem Gerät aus und speichert sie nicht, übernommen werden nur die Werte, die du selbst speicherst. Die Dateien für die Texterkennung legt der Browser im Browser-Speicher (Cache Storage) ab, die Sprachdaten speichert Tesseract.js zusätzlich in IndexedDB. Was du vor einem Foto schon getippt hast, merkt sich das Tankbuch bis zum Speichern oder Abbrechen im Sitzungsspeicher des Browsers (sessionStorage). All das bleibt auf dem Gerät. Es überträgt keine Einträge an den Betreiber oder an Dritte, setzt keine Cookies, nutzt kein Tracking und keine Werbung und lädt nichts von fremden Servern.</p>
     <p>Der Hoster dieser Seite (GitHub Pages der GitHub Inc.) speichert beim Aufruf technisch bedingt Zugriffsprotokolle, zum Beispiel IP-Adresse, Zeitpunkt und abgerufene Datei.</p>
     <p>Impressum: [Name, Anschrift und Kontakt des Betreibers ergänzen]</p>
   </footer>
@@ -558,6 +612,260 @@ function berechne(fillsIn, lampsIn, jetztKm, heuteIso) {
   return m;
 }
 /*CALC-END*/
+/*FOTO-START*/
+/* Auswertung von Fotos (Quittung, Tacho) und Plausibilitätsprüfung. Nur Text und Zahlen rein, Werte raus, kein Zugriff auf Seite oder Speicher. */
+const FOTO_TOLERANZ = 0.05, PREIS_MIN = 1.2, PREIS_MAX = 3, KM_SPRUNG = 2000;
+const r2 = (n) => Math.round(n * 100) / 100;
+const fzKm = (n) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(n);
+const fzDatum = (iso) => { const p = iso.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; };
+const fzPreis = (n) => n.toFixed(3).replace('.', ',');
+function fotoIso(d, m, y) {
+  let j = Number(y); if (j < 100) j += 2000;
+  const t = new Date(Date.UTC(j, m - 1, d));
+  if (j < 2000 || j > 2099 || t.getUTCFullYear() !== j || t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d) return null;
+  return j + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+// Typische Lesefehler in Zahlen: O statt 0, I/l/| statt 1, S statt 5, B statt 8, Z statt 2, G statt 6, D statt 0, Leerzeichen am Komma.
+// S, B, Z, G und D nur zwischen zwei Ziffern, nie in Wörtern.
+function ocrZiffern(s) {
+  let t = String(s).replace(/ /g, ' ');
+  for (let i = 0; i < 2; i++) {
+    t = t.replace(/(\d)[Oo]/g, '$10').replace(/(\d)[Il|](?=\d)/g, '$11').replace(/(\d)S(?=\d)/g, '$15').replace(/(\d)B(?=\d)/g, '$18')
+      .replace(/(\d)Z(?=\d)/g, '$12').replace(/(\d)G(?=\d)/g, '$16').replace(/(\d)D(?=\d)/g, '$10');
+  }
+  return t.replace(/(^|[^A-Za-zÄÖÜäöüß])[Oo](?=[.,]?\d)/g, '$10')
+    .replace(/(^|[\s(=:x*@])[Il|](?=[.,]\d)/g, '$11')
+    .replace(/(\d)\s+([.,])(\d{2,3})(?![\d.,])/g, '$1$2$3')
+    .replace(/(\d)([.,])\s+(\d{2,3})(?![\d.,])/g, '$1$2$3');
+}
+const qZahl = (r) => Number(String(r).replace(/\s/g, '').replace(',', '.'));
+const leer = (a, p) => p + ' '.repeat(a.length - p.length);
+
+// Quittung: Datum, Liter, Betrag und, falls aufgedruckt, Preis/l. Betrag wird gegen Liter × Preis/l geprüft.
+function leseQuittung(roh, heuteIso) {
+  const zeilen = ocrZiffern(roh).split(/\r?\n/).map((z) => z.trim()).filter(Boolean);
+  const erg = { datum: null, liter: null, betrag: null, ppl: null, erwartet: null, abweichung: null, summe: null, nurKraftstoff: false };
+  const daten = [], infos = [];
+  const PPL_EINHEIT = [
+    /(\d[.,]\d{2,3})\s*(?:€|eur|euro)?\s*\/\s*(?:l|ltr|liter|lt|1|I)(?![a-zäöü\d])/i,
+    /(?:€|eur)\s*\/\s*(?:l|ltr|liter|lt)\.?\s*[:=]?\s*(\d[.,]\d{2,3})(?!\d)/i,
+    /(?:literpreis|grundpreis|preis\s*\/\s*l|preis\s*je\s*l(?:iter)?|preis\s*pro\s*l(?:iter)?)\s*[:=]?\s*(\d[.,]\d{2,3})(?!\d)/i
+  ];
+  const PPL_MAL = /(?:^|[\s\d])(?:x|\*|à|@)\s*(\d[.,]\d{3})(?!\d)/i;
+  const LITER = [
+    /(^|[^\d.,])(\d{1,3}[.,]\d{1,3})\s*(?:l|ltr|liter|lt)\.?(?![a-zäöü\d])(?!\s*\/\s*100)/i,
+    /(^|[^a-zäöü])(?:menge|liter|ltr|abgabe|volumen)\s*[:=]?\s*(\d{1,3}[.,]\d{1,3})(?![\d.,])/i,
+    /(^|[^\d.,])(\d{2,3})\s*(?:l|ltr|liter)\.?(?![a-zäöü\d])(?!\s*\/\s*100)/i
+  ];
+  const BETRAG = /(^|[^\d.,])(\d{1,4}[.,]\d{2})(?![.,]?\d)(?!\s*%)/g;
+  const KRAFT = /super|diesel|benzin|kraftstoff|(?:^|[^a-z0-9])e(?:10|5)(?![0-9])/i;
+  zeilen.forEach((z, i) => {
+    let s = ' ' + z + ' ', m, mitDatum = false;
+    const info = { i, betraege: [], liter: false, kraftwort: KRAFT.test(z) };
+    // Datum
+    s = s.replace(/(^|[^\d])(\d{1,2})[./-](\d{1,2})[./-](\d{4}|\d{2})(?!\d)/g, (a, p, d, mo, y) => {
+      const iso = fotoIso(Number(d), Number(mo), y);
+      if (iso) { daten.push({ iso, wort: /datum|date/i.test(z) }); mitDatum = true; }
+      return leer(a, p);
+    });
+    s = s.replace(/(\d{4})-(\d{2})-(\d{2})/g, (a, y, mo, d) => { const iso = fotoIso(Number(d), Number(mo), y); if (iso) { daten.push({ iso, wort: /datum|date/i.test(z) }); mitDatum = true; } return ' '.repeat(a.length); });
+    s = s.replace(/\d{1,2}:\d{2}(?::\d{2})?/g, (a) => ' '.repeat(a.length));
+    // Uhrzeit mit Punkt (14.32): gilt als Uhrzeit, wenn „Uhr“ folgt oder die Zeile „Zeit“ oder ein Datum enthält. Sonst kein Betrag.
+    s = s.replace(/(^|[^\d.,])(?:[01]?\d|2[0-3])\.[0-5]\d(?![\d.,])(\s*uhr\b)?/gi, (a, p, uhr) => (uhr || mitDatum || /zeit/i.test(z) ? leer(a, p) : a));
+    s = s.replace(/\b(?:e5|e10|e85|b7|b10|hvo100|super\s*plus|super|diesel|v-power|ultimate|excellium|aral\s*ultimate)\b/gi, (a) => ' '.repeat(a.length));
+    // Preis pro Liter mit Einheit
+    for (const re of PPL_EINHEIT) {
+      if ((m = re.exec(s))) { const v = qZahl(m[1]); s = s.slice(0, m.index) + ' '.repeat(m[0].length) + s.slice(m.index + m[0].length); if (erg.ppl == null && v >= 0.5 && v <= 5) erg.ppl = v; break; }
+    }
+    // Liter
+    for (const re of LITER) {
+      if ((m = re.exec(s))) {
+        const v = qZahl(m[2]);
+        if (v > 0 && v <= 150) {
+          s = s.slice(0, m.index) + leer(m[0], m[1]) + s.slice(m.index + m[0].length);
+          if (erg.liter == null) { erg.liter = v; info.liter = true; }
+          break;
+        }
+      }
+    }
+    // Preis pro Liter nach „x“, „*“, „à“ oder „@“
+    if ((m = PPL_MAL.exec(s))) { const v = qZahl(m[1]); s = s.slice(0, m.index) + ' '.repeat(m[0].length) + s.slice(m.index + m[0].length); if (erg.ppl == null && v >= 0.5 && v <= 5) erg.ppl = v; }
+    // Beträge mit zwei Nachkommastellen
+    while ((m = BETRAG.exec(s))) { const v = qZahl(m[2]); if (v > 0 && v <= 1000 && !/[-−]/.test(m[1])) info.betraege.push(v); }
+    BETRAG.lastIndex = 0;
+    info.rest = s;
+    infos.push(info);
+  });
+  // Preis pro Liter ohne Einheit: Zahl mit drei Nachkommastellen zwischen 0,80 und 4
+  if (erg.ppl == null) {
+    for (const info of infos) {
+      const m = /(^|[^\d.,])(\d[.,]\d{3})(?![\d.,])/.exec(info.rest);
+      if (m) { const v = qZahl(m[2]); if (v >= 0.8 && v <= 4) { erg.ppl = v; break; } }
+    }
+  }
+  // Datum: nur Daten, die nicht in der Zukunft liegen; Zeile mit „Datum“ zuerst, sonst das jüngste
+  const bis = daten.filter((d) => !heuteIso || d.iso <= heuteIso).sort((a, b) => (a.iso < b.iso ? 1 : -1));
+  if (bis.length) erg.datum = (bis.find((d) => d.wort) || bis[0]).iso;
+  else if (daten.length) erg.datumZukunft = daten[0].iso;
+  // Beträge einordnen. Eine Steuerzeile fällt nur raus, wenn sie den Steuerbetrag selbst ausweist, nicht bei „inkl. MwSt“.
+  const AUS = /netto|gegeben|r[üu]ck|zur[üu]ck|wechsel|\bbar\b|rabatt|ersparnis|gespart|punkte|coupon|gutschein/i;
+  const STEUER = /mwst|ust\b|ust\.|steuer/i, INKL = /\binkl\b|inkl\.|inklusive|\bincl/i;
+  const ausgeschlossen = (z) => AUS.test(z) || (STEUER.test(z) && !INKL.test(z));
+  const SUMME = /summe|gesamt|total|zu\s*zahlen|zahlbetrag|endbetrag|betrag|brutto/i;
+  const ZAHLUNG = /\b(ec|karte|girocard|visa|master\w*|maestro|kredit\w*|debit|zahlung|bezahlt|v\s*pay)\b/i;
+  const tankZeile = infos.findIndex((x) => x.liter);
+  const kand = [];
+  infos.forEach((x) => {
+    const z = zeilen[x.i];
+    if (ausgeschlossen(z)) return;
+    const art = SUMME.test(z) ? 'summe' : ZAHLUNG.test(z) ? 'zahlung' : (tankZeile >= 0 && (x.i === tankZeile || x.i === tankZeile + 1)) ? 'kraftstoff' : 'sonst';
+    x.betraege.forEach((v) => kand.push({ v, art, i: x.i, kw: x.kraftwort }));
+  });
+  const max = (art) => kand.filter((k) => k.art === art).reduce((mx, k) => (mx == null || k.v > mx ? k.v : mx), null);
+  const summe = max('summe');
+  erg.summe = summe;
+  const standard = summe != null ? summe : max('kraftstoff') != null ? max('kraftstoff') : max('zahlung') != null ? max('zahlung') : max('sonst');
+  if (erg.liter != null && erg.ppl != null) {
+    erg.erwartet = r2(erg.liter * erg.ppl);
+    const nah = kand.slice().sort((a, b) => Math.abs(a.v - erg.erwartet) - Math.abs(b.v - erg.erwartet))[0];
+    if (nah && Math.abs(nah.v - erg.erwartet) <= FOTO_TOLERANZ + 1e-9) {
+      erg.betrag = nah.v;
+      if (summe != null && summe - nah.v > FOTO_TOLERANZ) erg.nurKraftstoff = true;
+      // Rabatt: Summe kleiner als die Kraftstoffzeile, bezahlt ist die Summe. Die Gegenprüfung gilt weiter der Kraftstoffzeile.
+      else if (summe != null && nah.v - summe > FOTO_TOLERANZ) { erg.rabatt = { kraftstoff: nah.v, bezahlt: summe }; erg.betrag = summe; }
+    } else if (standard != null) {
+      erg.betrag = standard;
+      erg.abweichung = r2(standard - erg.erwartet);
+    }
+  } else if (erg.ppl == null) {
+    // Ohne Preis/l keine Gegenprüfung: Betrag nur aus einer Zeile mit Kraftstoffwort, nie stillschweigend die Summe.
+    const kw = kand.filter((k) => k.kw);
+    if (kw.length) {
+      const erste = kw[0].i;
+      const kraft = kw.filter((k) => k.i === erste).reduce((mx, k) => (k.v > mx ? k.v : mx), 0);
+      erg.betrag = kraft;
+      if (new Set(kw.map((k) => k.i)).size > 1) erg.mehrereKraftstoffe = true;
+      if (summe != null && kraft - summe > FOTO_TOLERANZ) { erg.rabatt = { kraftstoff: kraft, bezahlt: summe }; erg.betrag = summe; }
+      else if (summe != null && summe - kraft > FOTO_TOLERANZ) erg.nurKraftstoff = true;
+    } else {
+      const werte = Array.from(new Set(kand.map((k) => k.v))).sort((a, b) => b - a);
+      if (werte.length === 1) erg.betrag = werte[0];
+      else if (werte.length > 1) erg.betragAuswahl = werte.slice(0, 4);
+    }
+  } else {
+    erg.betrag = standard;
+    const kraft = max('kraftstoff');
+    if (summe != null && kraft != null && kraft - summe > FOTO_TOLERANZ) erg.rabatt = { kraftstoff: kraft, bezahlt: summe };
+  }
+  // Liter ohne Einheit (Spaltenlayout oder „l“ als „1“ gelesen): nur übernehmen, wenn Zahl × Preis/l zum Betrag passt
+  if (erg.liter == null && erg.ppl != null && erg.betrag != null) {
+    for (const x of infos) {
+      if (ausgeschlossen(zeilen[x.i])) continue;
+      const re = /(^|[^\d.,])(\d{1,3}[.,]\d{2,3})(?![\d.,])/g;
+      let m, treffer = null;
+      while ((m = re.exec(x.rest))) {
+        const v = qZahl(m[2]);
+        if (v > 0 && v <= 150 && v !== erg.betrag && v !== erg.ppl && Math.abs(r2(v * erg.ppl) - erg.betrag) <= FOTO_TOLERANZ + 1e-9) { treffer = v; break; }
+      }
+      if (treffer != null) { erg.liter = treffer; erg.literAbgleich = true; erg.erwartet = r2(treffer * erg.ppl); break; }
+    }
+  }
+  return erg;
+}
+
+// Zeilen vom Kassenbon liefern keinen Km-Stand: Beleg-, Bon-, Trace- und TA-Nr., Terminal, TID, Kasse, Karte, Nr., Adresse
+// (PLZ vor Ortsnamen, Straße), Telefon, Uhrzeit, Datum, USt-IdNr. Steht dort eine Zahl mit „km“, zählt nur sie.
+// In Quittungszeilen (Preis, Betrag, Kraftstoff …) fallen Zahlen mit Nachkommastellen weg.
+const BON_ZEILE = /beleg|\bbon\b|bon-?nr|trace|\bta[ .-]?nr|terminal|\btid\b|kasse|karte|\bnr\b|nummer|telefon|\btel\b|\bfon\b|\bfax\b|ust[ .-]?id|steuer|uhrzeit|datum|vorgang|transakt|autori|genehm|kunden|filiale/i;
+const ADRESS_ZEILE = /(^|[^\d])\d{5}\s+[A-ZÄÖÜ][a-zäöüß]{2,}|stra(?:ss|ß)e|str\.\s*\d/;
+const QUITTUNGS_ZEILE = /€|\beur\b|euro|\/\s*l\b|liter|\bltr\b|summe|gesamtbetrag|total|mwst|\bust\b|betrag|preis|netto|brutto|\bbar\b|r[üu]ckgeld|super|diesel|benzin|kraftstoff|s[äa]ule/i;
+function tachoZeile(z) {
+  if (BON_ZEILE.test(z) || ADRESS_ZEILE.test(z)) return (z.match(/\d{1,3}(?:[.,]\d{3})+\s*km\b|\d+\s*km\b/gi) || []).join(' ');
+  if (QUITTUNGS_ZEILE.test(z)) return z.replace(/(^|[^\d.,])\d+[.,]\d+(?![\d.,])(?!\s*km)/gi, (a, p) => p + ' ');
+  return z;
+}
+// Tacho: Störzahlen (Uhrzeit, Temperatur, Datum, Tages-km mit Komma, km/h, Verbrauch, Bon-Zeilen) entfernen, dann den Kandidaten
+// wählen, der am nächsten über dem letzten gespeicherten Km-Stand liegt. Weitere plausible Kandidaten kommen in die Auswahl.
+// Ohne gespeicherten Km-Stand wird nur ein einzelner plausibler Kandidat eingetragen, mehrere kommen in die Auswahl.
+// nurMitKm: nur Zahlen mit „km“ dahinter zählen (Foto mit Quittung im Bild).
+function leseTacho(roh, refKm, nurMitKm) {
+  let s = ' ' + String(roh).split(/\r?\n/).map(tachoZeile).join(' \n ') + ' ';
+  // Temperatur: mit linker Grenze, ohne Zeilenumbruch, nimmt keine Ziffer eines längeren Werts mit
+  s = s.replace(/(^|[^\d.,])[-+−]?\d{1,2}(?:[.,]\d)?[ \t]*(?:°|º|˚)[ \t]*[CF]?(?![A-Za-zÄÖÜäöü])/g, (a, p) => p + ' ')
+    .replace(/(^|[^\d.,])[-+−]?\d{1,2}(?:[.,]\d)?[ \t]*[oO0]?[ \t]*C(?![A-Za-zÄÖÜäöü])/g, (a, p) => p + ' ');
+  s = ocrZiffern(s)
+    .replace(/\d{1,2}[./]\d{1,2}[./]\d{2,4}/g, ' ')
+    .replace(/\d{1,2}\s*:\s*\d{2}(?:\s*:\s*\d{2})?/g, ' ')
+    .replace(/\d+(?:[.,]\d+)?\s*km\s*\/\s*h/gi, ' ')
+    .replace(/\d+(?:[.,]\d+)?\s*l\s*\/\s*100(?:\s*km)?/gi, ' ')
+    // Gesamt-Km mit einer Nachkommastelle (48250.3, 48250,3): ab fünf Ziffern bleibt die Ganzzahl Kandidat.
+    // Kürzere Zahlen mit einer oder zwei Nachkommastellen (Trip 312,4, Verbrauch 5,82) bleiben Störzahlen.
+    .replace(/(^|[^\d.,])(\d{5,})[.,]\d(?![\d.,])/g, (a, p, g) => p + g)
+    .replace(/(^|[^\d.,])\d+[.,]\d{1,2}(?![\d.,])/g, (a, p) => p + ' ');
+  const kand = new Set(), mitKm = new Set();
+  const reKm = /(^|[^\d.,])(\d{1,3}(?:[.,]\d{3})+|\d+)\s*km(?![a-zäöü\/])/gi;
+  let m;
+  while ((m = reKm.exec(s))) mitKm.add(Number(m[2].replace(/[.,]/g, '')));
+  // Tausendertrenner Punkt oder Komma (48.250, 48,250) mit genau drei Ziffern danach ist eine Zahl.
+  // Ziffern-Grenze auf beiden Seiten, Zahlen mit Leerzeichen dazwischen bleiben getrennt.
+  const reT = /(^|[^\d.,])(\d{1,3}(?:[.,]\d{3})+)(?!\d|[.,]\d)/g;
+  while ((m = reT.exec(s))) kand.add(Number(m[2].replace(/[.,]/g, '')));
+  s = s.replace(reT, (a, p) => p + ' ');
+  (s.match(/\d+/g) || []).forEach((t) => kand.add(Number(t)));
+  const liste = Array.from(kand).filter((v) => Number.isInteger(v) && v > 0 && v <= 9999999 && (!nurMitKm || mitKm.has(v)));
+  const erg = { km: null, auswahl: [], kandidaten: liste.slice().sort((a, b) => b - a), ref: refKm == null ? null : refKm, ueberSprung: false };
+  if (refKm != null) {
+    const drueber = liste.filter((v) => v > refKm).sort((a, b) => a - b);
+    if (drueber.length) {
+      erg.km = drueber[0];
+      erg.ueberSprung = erg.km - refKm > KM_SPRUNG;
+      const weitere = drueber.filter((v) => v !== erg.km && v - refKm <= KM_SPRUNG);
+      if (weitere.length) erg.auswahl = [erg.km].concat(weitere).slice(0, 4);
+    } else erg.auswahl = liste.filter((v) => v >= 100 && mitKm.has(v)).sort((a, b) => b - a).slice(0, 4);
+    return erg;
+  }
+  // Plausibel sind Zahlen ab 1.000, gibt es keine, Zahlen ab 100. Eine wird eingetragen, mehrere nur angeboten.
+  const ab1000 = liste.filter((v) => v >= 1000).sort((a, b) => b - a);
+  const plausibel = ab1000.length ? ab1000 : liste.filter((v) => v >= 100).sort((a, b) => b - a);
+  if (plausibel.length === 1) erg.km = plausibel[0];
+  else if (plausibel.length > 1) erg.auswahl = plausibel.slice(0, 4);
+  return erg;
+}
+
+// Plausibilität: warnt, blockiert nicht. eintraege = alle anderen gespeicherten Einträge mit { typ, datum, km }.
+// Vorheriger Eintrag: der zeitlich letzte vor dem Datum; am selben Tag zählen nur Einträge derselben Art,
+// weil Reserve und Tankstopp am selben Tag in beliebiger Reihenfolge eingetragen werden.
+// Reserven ohne Datum haben keinen zeitlichen Nachbarn: Sie werden nicht geprüft und zählen für andere nicht als Nachbar.
+function vorherigerEintrag(e, eintraege) {
+  if (!e.datum) return null;
+  return eintraege.filter((x) => x.datum && (x.datum < e.datum || (x.datum === e.datum && x.typ === e.typ)))
+    .reduce((b, x) => (!b || x.datum > b.datum || (x.datum === b.datum && x.km > b.km) ? x : b), null);
+}
+// Folgender Eintrag: der zeitlich nächste mit späterem Datum (gleicher Tag zählt beim vorherigen). Den bearbeiteten Eintrag
+// selbst nimmt andereEintraege(id) schon vorher heraus.
+function folgenderEintrag(e, eintraege) {
+  if (!e.datum) return null;
+  return eintraege.filter((x) => x.datum && x.datum > e.datum)
+    .reduce((b, x) => (!b || x.datum < b.datum || (x.datum === b.datum && x.km < b.km) ? x : b), null);
+}
+function pruefeEintrag(e, eintraege, heuteIso) {
+  const w = [];
+  const vor = vorherigerEintrag(e, eintraege);
+  if (vor) {
+    const wann = vor.datum ? ' vom ' + fzDatum(vor.datum) : '';
+    if (e.km <= vor.km) w.push('Der Km-Stand ist nicht größer als beim vorherigen Eintrag' + wann + ' (' + fzKm(vor.km) + ' km).');
+    else if (e.km - vor.km > KM_SPRUNG) w.push('Der Km-Stand liegt ' + fzKm(e.km - vor.km) + ' km über dem vorherigen Eintrag' + wann + ' (' + fzKm(vor.km) + ' km), mehr als ' + fzKm(KM_SPRUNG) + ' km.');
+  }
+  const nach = folgenderEintrag(e, eintraege);
+  if (nach && e.km > nach.km) w.push('Der Km-Stand ist höher als beim folgenden Eintrag vom ' + fzDatum(nach.datum) + ' (' + fzKm(nach.km) + ' km).');
+  if (e.typ === 't' && e.liter > 0) {
+    const p = e.betrag / e.liter;
+    if (p < PREIS_MIN || p > PREIS_MAX) w.push('Der Preis pro Liter wäre ' + fzPreis(p) + ' €, üblich sind ' + fzPreis(PREIS_MIN).slice(0, 4) + ' bis ' + fzPreis(PREIS_MAX).slice(0, 4) + ' €.');
+  }
+  if (e.datum && heuteIso && e.datum > heuteIso) w.push('Das Datum ' + fzDatum(e.datum) + ' liegt in der Zukunft.');
+  return w;
+}
+/*FOTO-END*/
 
 /* Speicher: alles bleibt auf diesem Gerät. Eine zufällige, anonyme Geräte-ID ordnet die Einträge zu. */
 const K_GERAET = 'tankbuch-geraet';
@@ -902,10 +1210,11 @@ function preisHint() {
   const l = parseDez($('t-liter').value), b = parseDez($('t-betrag').value);
   $('t-preis').innerHTML = l && b ? '= ' + fPreis(b / l) + ' €/l' : 'Der Literpreis wird daraus berechnet.';
 }
-function leerTank() { $('t-datum').value = heute(); $('t-km').value = ''; $('t-liter').value = ''; $('t-betrag').value = ''; preisHint(); }
-function leerLampe() { $('l-datum').value = heute(); $('l-km').value = ''; }
+function leerTank() { $('t-datum').value = heute(); $('t-km').value = ''; $('t-liter').value = ''; $('t-betrag').value = ''; preisHint(); fotoZuruecksetzen('t'); entwurfLoeschen('t'); }
+function leerLampe() { $('l-datum').value = heute(); $('l-km').value = ''; fotoZuruecksetzen('l'); entwurfLoeschen('l'); }
 function endEdit() {
   editing = null;
+  warnSig.t = ''; warnSig.l = '';
   ['t', 'l'].forEach((p) => {
     $(p + '-edit').hidden = true; $(p + '-cancel').hidden = true;
     const d = $(p + '-del'); d.hidden = true; d.dataset.armed = ''; d.textContent = 'Löschen';
@@ -928,6 +1237,7 @@ function bearbeiteTank(f) {
   $('t-datum').value = f.datum; $('t-km').value = String(f.km);
   $('t-liter').value = nfL.format(f.liter); $('t-betrag').value = nf2.format(f.betrag);
   preisHint();
+  fotoZuruecksetzen('t', true);
   startEdit('t', 'Tankstopp vom ' + dmy(f.datum) + ' bearbeiten');
 }
 function bearbeiteLampe(l) {
@@ -935,6 +1245,7 @@ function bearbeiteLampe(l) {
   modus('lampe');
   editing = { typ: 'l', id: l.id, orig: l };
   $('l-km').value = String(l.km); $('l-datum').value = l.datum || '';
+  fotoZuruecksetzen('l', true);
   startEdit('l', 'Reserve bei ' + fKm(l.km) + ' km bearbeiten');
 }
 function armDelete(btn, run) {
@@ -947,8 +1258,8 @@ $('seg-tank').addEventListener('click', () => { if (editing) endEdit(); modus('t
 $('seg-lampe').addEventListener('click', () => { if (editing) endEdit(); modus('lampe'); });
 $('t-liter').addEventListener('input', preisHint);
 $('t-betrag').addEventListener('input', preisHint);
-$('f-tank').addEventListener('input', () => msg('t-msg', ''));
-$('f-lampe').addEventListener('input', () => msg('l-msg', ''));
+$('f-tank').addEventListener('input', () => { msg('t-msg', ''); warnZurueck('t'); });
+$('f-lampe').addEventListener('input', () => { msg('l-msg', ''); warnZurueck('l'); });
 $('t-cancel').addEventListener('click', () => { endEdit(); leerTank(); msg('t-msg', ''); });
 $('l-cancel').addEventListener('click', () => { endEdit(); leerLampe(); msg('l-msg', ''); });
 
@@ -963,6 +1274,7 @@ $('f-tank').addEventListener('submit', async (e) => {
   if (f.length) { msg('t-msg', f.join(' '), 'err'); return; }
   const data = { datum, km, liter: Math.round(liter * 100) / 100, betrag: Math.round(betrag * 100) / 100 };
   const id = editing && editing.typ === 't' ? editing.id : null;
+  if (!bestaetigt('t', pruefeEintrag(Object.assign({ typ: 't' }, data), andereEintraege(id), heute()), data)) return;
   const btn = $('t-save'); btn.disabled = true;
   const ok = await schreiben('tankstopps', id, data, 't-msg');
   btn.disabled = false;
@@ -977,6 +1289,7 @@ $('f-lampe').addEventListener('submit', async (e) => {
   const data = { km, datum: datum || null };
   if (editing && editing.typ === 'l' && editing.orig && editing.orig.ca && editing.orig.km === km) data.ca = true;
   const id = editing && editing.typ === 'l' ? editing.id : null;
+  if (!bestaetigt('l', pruefeEintrag(Object.assign({ typ: 'l' }, data), andereEintraege(id), heute()), data)) return;
   const btn = $('l-save'); btn.disabled = true;
   const ok = await schreiben('lampe', id, data, 'l-msg');
   btn.disabled = false;
@@ -992,6 +1305,272 @@ $('l-del').addEventListener('click', (e) => armDelete(e.currentTarget, async () 
   if (!editing || editing.typ !== 'l') return;
   const ok = await entfernen('lampe', editing.id, 'l-msg');
   if (ok) { endEdit(); leerLampe(); msg('l-msg', 'Reserve gelöscht.', 'ok'); }
+}));
+
+/* Zwei Eingabewege: Foto und Eintippen. Foto-Werte landen nur in den Feldern, gespeichert wird nur über den Speichern-Button. */
+const FOTO_FELDER = { t: ['t-datum', 't-km', 't-liter', 't-betrag'], l: ['l-km', 'l-datum'] };
+const TIPP_FELDER = { t: ['t-km', 't-liter', 't-betrag'], l: ['l-km'] };
+const SPEICHERN_TEXT = { t: 'Tankstopp speichern', l: 'Reserve speichern' };
+const PRUEFEN = 'aus Foto, bitte prüfen';
+const warnSig = { t: '', l: '' };
+const fotoNr = { t: 0, l: 0 };
+// Vorschläge je Feld: Ein neues Foto ersetzt nur die Liste der Felder, für die es etwas liefert.
+const wahlListen = { t: {}, l: {} };
+
+function markiere(id, text) { $(id).classList.add('aus-foto'); const g = $(id + '-tag'); g.textContent = text || PRUEFEN; g.hidden = false; }
+function entmarke(id) { $(id).classList.remove('aus-foto'); const g = $(id + '-tag'); g.textContent = ''; g.hidden = true; }
+// Setzt Markierungen, Auswahl und Meldung zurück. Ein noch laufendes Foto wird danach verworfen.
+function fotoZuruecksetzen(p, vorhanden) {
+  fotoNr[p]++;
+  FOTO_FELDER[p].forEach((id) => { entmarke(id); if (vorhanden) $(id).dataset.getippt = '1'; else delete $(id).dataset.getippt; });
+  zeigeWahl(p, []);
+  msg(p + '-foto-msg', '');
+  $(p + '-weiter').hidden = true;
+}
+function andereEintraege(ohneId) {
+  return rohT.filter(okFill).filter((x) => x.id !== ohneId).map((x) => ({ typ: 't', datum: x.datum, km: x.km }))
+    .concat(rohL.filter(okLamp).filter((x) => x.id !== ohneId).map((x) => ({ typ: 'l', datum: x.datum || null, km: x.km })));
+}
+function hoechsterKm(ohneId) {
+  return andereEintraege(ohneId).reduce((mx, x) => (mx == null || x.km > mx ? x.km : mx), null);
+}
+
+// Warnen statt blockieren: erster Tipp zeigt die Warnung, zweiter Tipp mit denselben Werten speichert.
+function bestaetigt(p, warn, data) {
+  if (!warn.length) return true;
+  const sig = JSON.stringify(data);
+  if (warnSig[p] === sig) return true;
+  warnSig[p] = sig;
+  msg(p + '-msg', 'Bitte prüfen: ' + warn.join(' ') + ' Stimmt alles, tippe noch einmal auf „Trotzdem speichern“.', 'warn');
+  $(p + '-save').textContent = 'Trotzdem speichern';
+  return false;
+}
+function warnZurueck(p) {
+  if (!warnSig[p]) return;
+  warnSig[p] = '';
+  $(p + '-save').textContent = editing && editing.typ === p ? 'Änderung speichern' : SPEICHERN_TEXT[p];
+}
+
+// Antippbare Auswahl je Feld. items: { feld, wert, text, aktiv }. Mit feld wird nur dessen Liste ersetzt, ohne feld alles geleert.
+function zeigeWahl(p, items, feld) {
+  if (feld) wahlListen[p][feld] = items;
+  else wahlListen[p] = {};
+  const box = $(p + '-wahl');
+  const html = [];
+  FOTO_FELDER[p].forEach((id) => (wahlListen[p][id] || []).forEach((x, i) => html.push(
+    '<button type="button" class="btn" data-feld="' + id + '" data-nr="' + i + '" aria-pressed="' + (x.aktiv ? 'true' : 'false') + '">' + esc(x.text) + '</button>')));
+  box.hidden = !html.length;
+  box.innerHTML = html.length ? '<p class="hint">Vom Foto, antippen zum Übernehmen:</p>' + html.join('') : '';
+}
+// Km-Stand über parseKm (getipptes „48.250“ = 48250), Datum als Text, sonst Dezimalzahl.
+const gleich = (id, a, b) => (id.endsWith('datum') ? a === b
+  : id.endsWith('-km') ? parseKm(a) != null && parseKm(a) === parseKm(b)
+  : parseDez(a) != null && parseDez(a) === parseDez(b));
+const FOTO_NAME = { 't-datum': 'Datum', 't-km': 'Km-Stand', 't-liter': 'Liter', 't-betrag': 'Betrag', 'l-km': 'Km-Stand', 'l-datum': 'Datum' };
+// Wert so, wie er im Feld steht, und so, wie er im Vorschlag steht
+const feldWert = (id, v) => (id.endsWith('datum') ? v : id.endsWith('-km') ? String(v) : id.endsWith('liter') ? nfL.format(v) : nf2.format(v));
+const wahlText = (id, v) => FOTO_NAME[id] + ' ' + (id.endsWith('datum') ? fzDatum(v) : id.endsWith('-km') ? fKm(v) : feldWert(id, v)) + ' übernehmen';
+
+// Wertet den Text eines Fotos aus. Tankstopp: Quittung und Tacho, Reserve: nur Tacho.
+// Ergebnis je Feld: werte (ein erkannter Wert), wahl (weitere Werte zum Antippen), tag (Markierungstext), dazu Hinweise.
+// zusatz: Text des zweiten Durchgangs (verstreuter Text), nur für den Km-Stand, wenn der erste keinen liefert.
+// Er gilt wie der erste: Bon-Zeilen fallen weg, mit Quittung im Bild zählen nur Zahlen mit „km“.
+function fotoAuswerten(p, text, ref, zusatz) {
+  const w = { werte: {}, wahl: {}, tag: {}, hinweise: [] };
+  const q = p === 't' ? leseQuittung(text, heute()) : null;
+  const bon = !!q && (q.liter != null || q.betrag != null || q.ppl != null || !!q.betragAuswahl);
+  let r = leseTacho(text, ref, bon);
+  if (r.km == null && !r.auswahl.length && zusatz) r = leseTacho(zusatz, ref, bon);
+  const kmId = p + '-km';
+  if (r.km != null) w.werte[kmId] = r.km;
+  if (r.auswahl.length) w.wahl[kmId] = r.auswahl;
+  if (r.km != null && r.ueberSprung) w.hinweise.push('Km-Stand ' + fKm(r.km) + ' liegt mehr als ' + fKm(KM_SPRUNG) + ' km über dem letzten, bitte prüfen.');
+  if (r.km == null && r.auswahl.length && ref != null) w.hinweise.push('Kein Km-Stand über deinem letzten (' + fKm(ref) + ' km) erkannt.');
+  if (!bon) return w;
+  if (q.datum) w.werte['t-datum'] = q.datum;
+  else if (q.datumZukunft) w.hinweise.push('Datum der Quittung (' + dmy(q.datumZukunft) + ') liegt in der Zukunft, nicht übernommen.');
+  if (q.liter != null) w.werte['t-liter'] = q.liter;
+  if (q.betrag != null) {
+    w.werte['t-betrag'] = q.betrag;
+    if (q.abweichung != null) w.tag['t-betrag'] = 'aus Foto, Abweichung, bitte prüfen';
+    else if (q.rabatt) w.tag['t-betrag'] = 'aus Foto, Rabatt, bitte prüfen';
+  }
+  if (q.betragAuswahl) { w.wahl['t-betrag'] = q.betragAuswahl; w.hinweise.push('Shop-Artikel möglich, Kraftstoffbetrag wählen.'); }
+  if (q.ppl != null && q.liter == null && q.betrag != null) w.wahl['t-liter'] = [r2(q.betrag / q.ppl)];
+  if (q.ppl != null && q.betrag == null && q.liter != null) w.wahl['t-betrag'] = [q.erwartet];
+  if (q.abweichung != null) w.hinweise.push('Gegenprüfung: ' + fL(q.liter) + ' × ' + fzPreis(q.ppl) + ' €/l = ' + fEur(q.erwartet) + ', erkannt ' + fEur(q.betrag) + '. Betrag prüfen.');
+  else if (q.rabatt) w.hinweise.push('Rabatt erkannt: Kraftstoff ' + fEur(q.rabatt.kraftstoff) + ', bezahlt ' + fEur(q.rabatt.bezahlt) + ', eingetragen ist der bezahlte Betrag.');
+  else if (q.nurKraftstoff) w.hinweise.push('Die Summe (' + fEur(q.summe) + ') enthält mehr als Kraftstoff, eingetragen ist der Kraftstoffbetrag.');
+  if (q.mehrereKraftstoffe) w.hinweise.push('Mehrere Kraftstoffe auf der Quittung, eingetragen ist der erste.');
+  return w;
+}
+
+// Führt die Ergebnisse aller Fotos eines Durchgangs je Feld zusammen:
+// ein Wert → eintragen und markieren; mehrere verschiedene → Feld nicht füllen, Auswahl; Feld schon getippt oder schon
+// übernommen und Wert weicht ab → nicht überschreiben, Auswahl. Felder ohne Ergebnis behalten Wert und Vorschläge.
+function fotosUebernehmen(p, texte) {
+  const ref = hoechsterKm(editing && editing.typ === p ? editing.id : null);
+  const teile = texte.map((t) => fotoAuswerten(p, t.text, ref, t.zusatz));
+  const ausFoto = [], waehlen = [], hinweise = [];
+  teile.forEach((w) => w.hinweise.forEach((h) => { if (!hinweise.includes(h)) hinweise.push(h); }));
+  FOTO_FELDER[p].forEach((id) => {
+    const werte = [], extra = [];
+    let tag = null;
+    teile.forEach((w) => {
+      if (w.werte[id] != null && !werte.includes(w.werte[id])) werte.push(w.werte[id]);
+      if (w.tag[id]) tag = w.tag[id];
+      (w.wahl[id] || []).forEach((v) => { if (!extra.includes(v)) extra.push(v); });
+    });
+    if (!werte.length && !extra.length) return;
+    const el = $(id), alt = el.value.trim();
+    const belegt = !!alt && (!!el.dataset.getippt || el.classList.contains('aus-foto'));
+    const vorschlag = [];
+    if (werte.length === 1) {
+      const v = feldWert(id, werte[0]);
+      if (!belegt) { el.value = v; delete el.dataset.getippt; markiere(id, tag); ausFoto.push(FOTO_NAME[id]); }
+      else if (!gleich(id, alt, v)) vorschlag.push(werte[0]);
+      else if (el.classList.contains('aus-foto')) ausFoto.push(FOTO_NAME[id]);
+    } else werte.forEach((v) => vorschlag.push(v));
+    extra.forEach((v) => { if (!vorschlag.includes(v)) vorschlag.push(v); });
+    const jetzt = el.value.trim();
+    const items = vorschlag.map((v) => ({ feld: id, wert: feldWert(id, v), text: wahlText(id, v), aktiv: !!jetzt && gleich(id, jetzt, feldWert(id, v)) }));
+    zeigeWahl(p, items, id);
+    if (items.length && !items.some((x) => x.aktiv)) waehlen.push(FOTO_NAME[id]);
+  });
+  if (p === 't') preisHint();
+  const offen = (id) => !$(id).value.trim() && !(wahlListen[p][id] || []).length;
+  const t = [];
+  if (ausFoto.length) t.push('Aus Foto: ' + ausFoto.join(', ') + '.');
+  if (waehlen.length) t.push('Bitte wählen: ' + waehlen.join(', ') + '.');
+  if (offen(p + '-km')) t.push('Km-Stand fehlt, Tacho fotografieren oder tippen.');
+  if (p === 't') {
+    const fehlt = ['t-liter', 't-betrag'].filter(offen).map((id) => FOTO_NAME[id]);
+    if (fehlt.length) t.push(fehlt.join(' und ') + (fehlt.length > 1 ? ' fehlen' : ' fehlt') + ', Quittung fotografieren oder tippen.');
+  }
+  const nichts = !ausFoto.length && !waehlen.length && teile.every((w) => !Object.keys(w.werte).length && !Object.keys(w.wahl).length);
+  if (nichts) t.unshift('Auf ' + (texte.length > 1 ? 'den Fotos' : 'dem Foto') + ' wurde nichts erkannt, versuch ein schärferes, gerades Foto.');
+  t.push(...hinweise, 'Gespeichert wird erst mit „' + $(p + '-save').textContent + '“.');
+  msg(p + '-foto-msg', t.join(' '), nichts ? 'err' : waehlen.length || hinweise.length || t.some((x) => / fehl(t|en),/.test(x)) ? 'warn' : 'ok');
+}
+
+// Verwertbar: irgendein Feldwert oder Vorschlag. Sonst folgt ein Versuch mit gedrehtem Bild.
+function fotoVerwertbar(p, text, zusatz) {
+  const w = fotoAuswerten(p, text, hoechsterKm(editing && editing.typ === p ? editing.id : null), zusatz);
+  return Object.keys(w.werte).length > 0 || Object.keys(w.wahl).length > 0;
+}
+// Zweiter Durchgang (verstreuter Text): „km“ steht im Text, aber kein Km-Stand wurde gefunden. Typisch, wenn große Tacho-Ziffern
+// neben kleiner Bon-Schrift im selben Foto liegen.
+function fotoNachlesen(p, text) {
+  if (!/\bkm\b/i.test(text)) return false;
+  const w = fotoAuswerten(p, text, hoechsterKm(editing && editing.typ === p ? editing.id : null));
+  return w.werte[p + '-km'] == null && !w.wahl[p + '-km'];
+}
+const formSichtbar = (p) => !$(p === 't' ? 'f-tank' : 'f-lampe').hidden;
+const ABGEBROCHEN = 'Foto-Erkennung abgebrochen, Formular gewechselt.';
+// Liest ein oder mehrere Fotos nacheinander mit demselben Worker und führt die Werte zusammen.
+async function fotoLesen(p, files) {
+  if (ocrLaeuft) return; // Hinweis steht schon in der Sperrzeile des Formulars
+  const nr = ++fotoNr[p];
+  msg(p + '-foto-msg', 'Texterkennung wird geladen. Beim ersten Mal sind das etwa 5 MB.');
+  // Formular gewechselt: Ergebnis verwerfen, Meldung im sichtbaren Formular
+  const gewechselt = () => {
+    if (formSichtbar(p)) return false;
+    msg(p + '-foto-msg', '');
+    msg((p === 't' ? 'l' : 't') + '-foto-msg', ABGEBROCHEN, 'warn');
+    return true;
+  };
+  const status = (t) => { if (nr === fotoNr[p]) msg(p + '-foto-msg', t.replace(/^Bild 1 von 1 wird gelesen/, 'Foto wird gelesen').replace(/^Bild /, 'Foto ')); };
+  try {
+    const texte = await erkenneEinzeln(files, status, p, (t, z) => fotoVerwertbar(p, t, z), (t) => fotoNachlesen(p, t));
+    if (nr !== fotoNr[p] || gewechselt()) return;
+    msg(p + '-msg', ''); warnZurueck(p);
+    fotosUebernehmen(p, texte);
+    $(p + '-weiter').hidden = false;
+    entwurfNachfuehren(p);
+  } catch (err) {
+    if (nr !== fotoNr[p] || gewechselt()) return;
+    msg(p + '-foto-msg', 'Die Texterkennung hat nicht geklappt: ' + (err && err.message ? err.message : 'unbekannter Fehler') + '. Trag die Werte selbst ein.', 'err');
+    $(p + '-weiter').hidden = false;
+  }
+}
+
+// Entwurf: Vor dem Öffnen der Kamera (Klick auf einen Foto-Eingang, auch über sein Label) kommen alle Felder des sichtbaren
+// Formulars in den sessionStorage. Lädt Safari die Seite danach neu, werden sie wiederhergestellt.
+// Gelöscht beim Speichern, Abbrechen und Löschen (leerTank, leerLampe). Solange ein Entwurf besteht, folgt er dem Getippten.
+const K_ENTWURF = 'tankbuch-entwurf', ENTWURF_MAX = 2 * 60 * 60 * 1000;
+const sichtbaresFormular = () => ($('f-tank').hidden ? 'l' : 't');
+function entwurfLesen() {
+  try { const d = JSON.parse(window.sessionStorage.getItem(K_ENTWURF) || 'null'); return d && d.felder && (d.form === 't' || d.form === 'l') ? d : null; }
+  catch (err) { return null; }
+}
+function entwurfSichern() {
+  try {
+    const p = sichtbaresFormular();
+    const d = { zeit: Date.now(), form: p, bearbeitet: editing && editing.typ === p ? editing.id : null, felder: {} };
+    FOTO_FELDER[p].forEach((id) => {
+      const el = $(id);
+      d.felder[id] = { v: el.value, z: el.dataset.getippt ? 'g' : el.classList.contains('aus-foto') ? 'f' : '' };
+    });
+    window.sessionStorage.setItem(K_ENTWURF, JSON.stringify(d));
+  } catch (err) { /* ohne Entwurf weiter */ }
+}
+function entwurfNachfuehren(p) { const d = entwurfLesen(); if (d && d.form === p && sichtbaresFormular() === p) entwurfSichern(); }
+function entwurfLoeschen(p) {
+  const d = entwurfLesen();
+  if (!d || (p && d.form !== p)) return;
+  try { window.sessionStorage.removeItem(K_ENTWURF); } catch (err) { /* nichts zu tun */ }
+}
+function entwurfWiederherstellen() {
+  const d = entwurfLesen();
+  if (!d) return;
+  const p = d.form;
+  const inhalt = FOTO_FELDER[p].some((id) => d.felder[id] && d.felder[id].z);
+  if (!(Date.now() - d.zeit <= ENTWURF_MAX) || !inhalt) { entwurfLoeschen(); return; }
+  if (d.bearbeitet) {
+    const x = (p === 't' ? rohT : rohL).find((y) => y.id === d.bearbeitet);
+    if (!x) { entwurfLoeschen(); return; }
+    (p === 't' ? bearbeiteTank : bearbeiteLampe)(x);
+  }
+  modus(p === 'l' ? 'lampe' : 'tank');
+  FOTO_FELDER[p].forEach((id) => {
+    const el = $(id), f = d.felder[id];
+    if (!f || typeof f.v !== 'string') return;
+    el.value = f.v;
+    if (f.z === 'g') { el.dataset.getippt = '1'; entmarke(id); }
+    else if (f.z === 'f') { delete el.dataset.getippt; markiere(id); }
+    else { delete el.dataset.getippt; entmarke(id); }
+  });
+  if (p === 't') preisHint();
+  msg(p + '-foto-msg', 'Entwurf wiederhergestellt. Ein gerade aufgenommenes Foto bitte noch einmal machen.', 'warn');
+}
+
+// „Selbst eintippen“: Fokus ins erste leere Zahlenfeld, damit sich die Zahlentastatur öffnet.
+function tippen(p) {
+  const felder = TIPP_FELDER[p].map($);
+  (felder.find((x) => !x.value.trim()) || felder[0]).focus();
+}
+
+// „Per Foto“ ist in beiden Formularen direkt das Label des Kamera-Eingangs, ebenso „Weiteres Foto“.
+['t', 'l'].forEach((p) => {
+  $(p + '-weg-tippen').addEventListener('click', () => tippen(p));
+  $(p + '-wahl').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-feld]'); if (!b) return;
+    const id = b.dataset.feld, liste = wahlListen[p][id] || [], x = liste[Number(b.dataset.nr)];
+    if (!x) return;
+    $(id).value = x.wert; delete $(id).dataset.getippt; markiere(id);
+    liste.forEach((y) => { y.aktiv = y === x; });
+    zeigeWahl(p, liste, id);
+    if (p === 't') preisHint();
+    msg(p + '-msg', ''); warnZurueck(p);
+    entwurfNachfuehren(p);
+  });
+  FOTO_FELDER[p].forEach((id) => $(id).addEventListener('input', () => { $(id).dataset.getippt = '1'; entmarke(id); entwurfNachfuehren(p); }));
+});
+document.querySelectorAll('input[data-foto]').forEach((inp) => inp.addEventListener('click', entwurfSichern));
+document.querySelectorAll('input[data-foto]').forEach((inp) => inp.addEventListener('change', () => {
+  const files = Array.from(inp.files || []);
+  inp.value = '';
+  if (files.length) fotoLesen(inp.dataset.form, files);
 }));
 
 $('log').addEventListener('click', (e) => {
@@ -1701,44 +2280,124 @@ function simdDa() {
   try { return typeof WebAssembly === 'object' && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
   catch (err) { return false; }
 }
+// Dekodiert über ein HTMLImageElement: Dort wendet der Browser die EXIF-Drehung an. Danach auf ein Canvas mit höchstens 2.400 px.
+// Lässt sich das Bild so nicht öffnen, geht die Datei unverändert an Tesseract.
 async function bildVorbereiten(file) {
-  if (typeof createImageBitmap !== 'function') return file;
+  let url = null;
   try {
-    const bmp = await createImageBitmap(file);
-    const f = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
-    if (f >= 1) { if (bmp.close) bmp.close(); return file; }
+    url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('Bild ließ sich nicht öffnen')); img.src = url; });
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h) return file;
+    const f = Math.min(1, 2400 / Math.max(w, h));
     const c = document.createElement('canvas');
-    c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    if (bmp.close) bmp.close();
+    c.width = Math.round(w * f); c.height = Math.round(h * f);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     return c;
   } catch (err) { return file; }
+  finally { if (url) URL.revokeObjectURL(url); }
 }
-async function erkenneBilder(files, status) {
+// Um 90° im Uhrzeigersinn gedrehte Kopie eines Canvas; bei einer Datei (nicht dekodierbar) kein zweiter Versuch.
+function gedreht90(bild) {
+  if (!bild || typeof bild.getContext !== 'function') return null;
+  const c = document.createElement('canvas');
+  c.width = bild.height; c.height = bild.width;
+  const g = c.getContext('2d');
+  g.translate(c.width, 0); g.rotate(Math.PI / 2); g.drawImage(bild, 0, 0);
+  return c;
+}
+// Es läuft immer nur eine Texterkennung. Solange sie läuft, sind alle Foto-Eingänge und der Bild-Import gesperrt.
+let ocrLaeuft = null;
+const SPERR_TEXT = 'Gerade läuft schon eine Texterkennung. Fotos gehen wieder, sobald sie fertig ist.';
+function ocrSperre(quelle) {
+  document.querySelectorAll('input[data-foto], #imp-bild').forEach((x) => { x.disabled = !!quelle; });
+  ['t', 'l', 'imp'].forEach((q) => { $(q + '-sperre').textContent = quelle && quelle !== q ? SPERR_TEXT : ''; });
+}
+// Import: alle Texte in einem. Fotos im Formular: erkenneEinzeln liefert je Bild { text, zusatz }.
+async function erkenneBilder(files, status, quelle, verwertbar) {
+  return (await erkenneEinzeln(files, status, quelle, verwertbar)).map((x) => x.text).join('\n\n');
+}
+// verwertbar (optional, nur Fotos im Formular): prüft den Text; ohne verwertbaren Wert folgt ein Versuch mit 90° gedrehtem Bild.
+// nachlesen (optional): verlangt einen zweiten Durchgang mit „verstreutem Text“ (Seitenmodus 11). Die normale Seitenanalyse
+// lässt große Tacho-Ziffern neben kleiner Bon-Schrift oft weg; der zweite Text dient nur der Km-Suche.
+async function erkenneEinzeln(files, status, quelle, verwertbar, nachlesen) {
+  if (ocrLaeuft) throw new Error('es läuft schon eine Texterkennung, warte kurz');
+  ocrLaeuft = quelle || 'imp';
+  ocrSperre(ocrLaeuft);
+  clearTimeout(ocrRuheTimer); ocrRuheTimer = null;
+  try { return await erkenneBilderJetzt(files, status, verwertbar, nachlesen); }
+  finally { ocrLaeuft = null; ocrSperre(null); workerRuhe(); }
+}
+// Ein Tesseract-Worker pro Sitzung. Er wird beim ersten Foto erzeugt, danach wiederverwendet
+// und zwei Minuten nach der letzten Erkennung beendet.
+const OCR_RUHE_MS = 2 * 60 * 1000;
+// Kommt zwei Minuten lang keine Rückmeldung von Tesseract (z. B. Sprachdaten ohne Netz nicht ladbar), gilt die Erkennung als
+// gescheitert. Sonst bliebe die Sperre für immer stehen.
+const OCR_STILL_MS = 2 * 60 * 1000;
+let ocrWorker = null, ocrRuheTimer = null, ocrLogger = null, ocrGen = 0;
+async function holeWorker() {
+  if (ocrWorker) return ocrWorker;
+  const gen = ocrGen;
   const T = await ladeOcr();
   const basis = new URL('ocr/', location.href).href;
-  let nr = 0;
-  const worker = await T.createWorker('deu', 1, {
+  const w = await T.createWorker('deu', 1, {
     workerPath: basis + 'worker.min.js',
     workerBlobURL: false,
     corePath: basis + (simdDa() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js'),
     langPath: basis,
-    logger: (m) => {
-      if (!m || typeof m.progress !== 'number') return;
-      const pz = Math.round(m.progress * 100) + ' %';
-      if (m.status === 'recognizing text') status('Bild ' + nr + ' von ' + files.length + ' wird gelesen: ' + pz);
-      else status('Texterkennung wird vorbereitet: ' + pz);
-    }
+    logger: (m) => { if (ocrLogger) ocrLogger(m); }
   });
-  const texte = [];
+  if (gen !== ocrGen) { Promise.resolve().then(() => w.terminate()).catch(() => { /* egal */ }); throw new Error('Texterkennung abgebrochen'); }
+  ocrWorker = w;
+  return w;
+}
+function workerBeenden() {
+  ocrGen++;
+  clearTimeout(ocrRuheTimer); ocrRuheTimer = null;
+  const w = ocrWorker; ocrWorker = null;
+  if (w) Promise.resolve().then(() => w.terminate()).catch(() => { /* schon beendet */ });
+}
+function wachhund(ms) {
+  let t = null, abbruch = null;
+  const p = new Promise((res, rej) => { abbruch = rej; });
+  p.catch(() => { /* wird über Promise.race ausgewertet */ });
+  const weiter = () => { clearTimeout(t); t = setTimeout(() => abbruch(new Error('die Texterkennung antwortet nicht, prüfe die Verbindung')), ms); };
+  weiter();
+  return { p, weiter, stop: () => clearTimeout(t) };
+}
+function workerRuhe() {
+  clearTimeout(ocrRuheTimer);
+  ocrRuheTimer = ocrWorker ? setTimeout(() => { if (!ocrLaeuft) workerBeenden(); }, OCR_RUHE_MS) : null;
+}
+async function erkenneBilderJetzt(files, status, verwertbar, nachlesen) {
+  let nr = 0;
+  const wh = wachhund(OCR_STILL_MS);
+  ocrLogger = (m) => {
+    wh.weiter();
+    if (!m || typeof m.progress !== 'number') return;
+    const pz = Math.round(m.progress * 100) + ' %';
+    if (m.status === 'recognizing text') status('Bild ' + nr + ' von ' + files.length + ' wird gelesen: ' + pz);
+    else status('Texterkennung wird vorbereitet: ' + pz);
+  };
   try {
+    const worker = await Promise.race([holeWorker(), wh.p]);
+    const lies = async (bild, opt) => { wh.weiter(); const r = await Promise.race([opt ? worker.recognize(bild, opt) : worker.recognize(bild), wh.p]); return (r && r.data && r.data.text) || ''; };
+    const texte = [];
     for (const f of files) {
       nr++;
-      const r = await worker.recognize(await bildVorbereiten(f));
-      texte.push((r && r.data && r.data.text) || '');
+      const bild = await bildVorbereiten(f);
+      let text = await lies(bild), zusatz = null;
+      if (nachlesen && nachlesen(text)) zusatz = await lies(bild, { tessedit_pageseg_mode: '11' });
+      if (verwertbar && !verwertbar(text, zusatz)) {
+        const dreh = gedreht90(bild);
+        if (dreh) { const t2 = await lies(dreh); if (verwertbar(t2, null)) { text = t2; zusatz = null; } }
+      }
+      texte.push({ text, zusatz });
     }
-  } finally { await worker.terminate(); }
-  return texte.join('\n\n');
+    return texte;
+  } catch (err) { workerBeenden(); throw err; }
+  finally { wh.stop(); ocrLogger = null; }
 }
 $('imp-text-btn').addEventListener('click', () => { $('imp-text').hidden = false; msg('imp-ocr', ''); $('imp-textfeld').focus(); });
 $('imp-text-zu').addEventListener('click', () => { $('imp-text').hidden = true; msg('imp-ocr', ''); });
@@ -1816,6 +2475,7 @@ function start() {
   } catch (err) { jetztKm = null; }
   lade();
   render();
+  entwurfWiederherstellen();
   persistStand();
   if (document.readyState === 'complete') registriereSW(); else window.addEventListener('load', registriereSW);
 }
