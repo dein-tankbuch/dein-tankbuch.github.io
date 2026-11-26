@@ -220,6 +220,14 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
 #t-foto-msg:empty,#l-foto-msg:empty{display:none}
 .seg button{min-height:44px}
 </style>
+<style>
+/* Version 8: Ausblick mit Hochrechnung für diesen und den nächsten Monat und ein Jahr */
+.stats.ab{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ab-info{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;max-width:62ch}
+.ab-info:empty{display:none}
+.ab-info .ab-wichtig{position:relative;padding-left:15px;color:var(--ink);font-size:14px;font-weight:500}
+.ab-info .ab-wichtig::before{content:"";position:absolute;left:0;top:.48em;width:7px;height:7px;border-radius:50%;background:var(--lamp)}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -421,6 +429,12 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
     <ul class="basis" id="basis"></ul>
   </section>
 
+  <section aria-labelledby="h-ausblick">
+    <h2 class="eyebrow" id="h-ausblick">Ausblick</h2>
+    <dl class="stats ab" id="ausblick" hidden></dl>
+    <ul class="ab-info" id="ausblick-info"></ul>
+  </section>
+
   <section aria-labelledby="h-stats">
     <h2 class="eyebrow" id="h-stats">Kennzahlen</h2>
     <dl class="stats" id="stats"></dl>
@@ -616,6 +630,67 @@ function berechne(fillsIn, lampsIn, jetztKm, heuteIso) {
   return m;
 }
 /*CALC-END*/
+/*AUSBLICK-START*/
+/* Ausblick: Hochrechnung für diesen und den nächsten Monat und ein Jahr. Liest nur das Ergebnis von berechne() und ändert nichts daran.
+   Tempo: km pro Tag über rund 8 Wochen. Verbrauch und letzter Literpreis wie in den Kennzahlen.
+   Was bis zur Reserve noch im Tank ist, muss nicht gekauft werden. Danach wird gekauft, was verbraucht wird.
+   Tankrabatt: Energiesteuer vom 1.10. bis 31.12.2026 um 14,04 ct/l gesenkt, mit Umsatzsteuer rund 16,7 ct/l.
+   Stammt der letzte Literpreis aus der Zeit davor, rechnet der Ausblick ab Januar mit diesem Aufschlag. */
+const AB_FENSTER = 56, AB_MIN_TAGE = 14, AB_ALT = 45, AB_HEBEL = 0.1, AB_MIN_L = 0.5;
+const AB_RABATT_BIS = '2026-12-31', AB_RABATT = 0.167;
+const AB_MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+function abMonatsende(iso) {
+  const [y, mo] = iso.split('-').map(Number);
+  const d = new Date(Date.UTC(y, mo, 0));
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+}
+function ausblick(m, heuteIso) {
+  if (m.fills.length < 2 || !(m.verbrauch > 0) || !(m.lastPreis > 0)) return { grund: 'daten' };
+  // Km-Stände mit Datum: Tankstopps, Reserve mit Datum und der Km-Stand von heute
+  const pkt = m.fills.map((f) => ({ datum: f.datum, km: f.km }));
+  m.lamps.forEach((l) => { if (l.datum) pkt.push({ datum: l.datum, km: l.km }); });
+  if (m.jetztKm != null) pkt.push({ datum: heuteIso, km: m.jetztKm });
+  const p = pkt.filter((x) => x.datum <= heuteIso)
+    .sort((a, b) => (a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : a.km - b.km));
+  if (p.length < 2) return { grund: 'daten' };
+  const E = p[p.length - 1];
+  const alt = tageZwischen(E.datum, heuteIso);
+  if (alt > AB_ALT) return { grund: 'alt', tage: alt };
+  let S = p[0];
+  for (let i = p.length - 2; i >= 0; i--) if (tageZwischen(p[i].datum, E.datum) >= AB_FENSTER) { S = p[i]; break; }
+  const spanne = tageZwischen(S.datum, E.datum);
+  if (spanne < AB_MIN_TAGE || !(E.km > S.km)) return { grund: 'kurz' };
+  const rate = (E.km - S.km) / spanne;
+  const lpk = m.verbrauch / 100;
+  const kmHeute = m.jetztKm != null ? m.jetztKm : E.km + rate * alt;
+  let tankKm = null;
+  if (m.status === 'prognose' || m.status === 'faellig') tankKm = Math.max(0, m.lampKm - kmHeute);
+  else if (m.status === 'leuchtet') tankKm = 0;
+  const kauf = (t) => Math.max(0, rate * t - (tankKm || 0)) * lpk; // Liter, die von heute bis t Tage später gekauft werden
+  const mitRabatt = m.last.datum <= AB_RABATT_BIS;
+  const preis = (iso) => m.lastPreis + (mitRabatt && iso > AB_RABATT_BIS ? AB_RABATT : 0);
+  const ende1 = abMonatsende(heuteIso), t1 = tageZwischen(heuteIso, ende1);
+  const ende2 = abMonatsende(plusTage(ende1, 1)), t2 = tageZwischen(heuteIso, ende2);
+  let l1 = kauf(t1);
+  if (l1 < AB_MIN_L) l1 = 0;
+  const l2 = Math.max(0, kauf(t2) - l1);
+  const monat = heuteIso.slice(0, 7);
+  const bisher = m.fills.filter((f) => f.datum.slice(0, 7) === monat && f.datum <= heuteIso).reduce((s, f) => s + f.betrag, 0);
+  const rest1 = l1 * preis(ende1);
+  const letzte = m.fills.slice(-6).map((f) => f.liter).sort((a, b) => a - b), h = letzte.length >> 1;
+  const typisch = letzte.length % 2 ? letzte[h] : (letzte[h - 1] + letzte[h]) / 2;
+  const jahrL = rate * 365 * lpk;
+  const tageVorher = Math.min(365, Math.max(0, tageZwischen(heuteIso, AB_RABATT_BIS)));
+  return {
+    ok: true, rate, seit: S.datum, verbrauch: m.verbrauch, preis: m.lastPreis, mitTank: tankKm != null,
+    m1: { name: AB_MONATE[Number(heuteIso.slice(5, 7)) - 1], ende: ende1, tage: t1, bisher, rest: rest1, gesamt: bisher + rest1, reicht: tankKm != null && t1 > 0 && l1 === 0 },
+    m2: { name: AB_MONATE[Number(ende2.slice(5, 7)) - 1], liter: l2, betrag: l2 * preis(ende2), stopps: l2 < AB_MIN_L ? 0 : Math.max(1, Math.round(l2 / typisch)) },
+    jahr: { km: rate * 365, betrag: jahrL * m.lastPreis + (mitRabatt ? jahrL * (365 - tageVorher) / 365 * AB_RABATT : 0) },
+    hebel: { monat: jahrL / 12 * AB_HEBEL, jahr: jahrL * AB_HEBEL },
+    rabatt: mitRabatt && heuteIso <= AB_RABATT_BIS ? { monat: jahrL / 12 * AB_RABATT } : null
+  };
+}
+/*AUSBLICK-END*/
 /*FOTO-START*/
 /* Auswertung von Fotos (Quittung, Tacho) und Plausibilitätsprüfung. Nur Text und Zahlen rein, Werte raus, kein Zugriff auf Seite oder Speicher. */
 const FOTO_TOLERANZ = 0.05, PREIS_MIN = 1.2, PREIS_MAX = 3, KM_SPRUNG = 2000;
@@ -1022,7 +1097,7 @@ function entfernen(coll, id, msgId) {
 
 function render() {
   const m = berechne(rohT.filter(okFill), rohL.filter(okLamp), jetztKm, heute());
-  renderMeta(m); renderHero(m); renderStats(m); renderLog(m); renderDaten();
+  renderMeta(m); renderHero(m); renderAusblick(m); renderStats(m); renderLog(m); renderDaten();
 }
 
 function renderMeta(m) {
@@ -1158,6 +1233,37 @@ function renderStats(m) {
   ];
   $('stats').innerHTML = items.map(([dt, dd, sub]) =>
     '<div class="stat"><dt>' + dt + '</dt><dd>' + dd + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</dd></div>').join('');
+}
+
+function renderAusblick(m) {
+  const dl = $('ausblick'), info = $('ausblick-info');
+  const a = ausblick(m, heute());
+  if (!a.ok) {
+    dl.hidden = true; dl.innerHTML = '';
+    info.innerHTML = linien([a.grund === 'alt'
+      ? 'Dein letzter Eintrag ist ' + a.tage + ' Tage alt. Trag ' + ($('now').hidden ? '' : 'oben den Km-Stand von heute oder ') + 'den nächsten Tankstopp ein, dann rechnet der Ausblick wieder.'
+      : a.grund === 'kurz' ? 'Für den Ausblick braucht es Einträge über mindestens zwei Wochen.'
+        : 'Ab zwei Tankstopps über mindestens zwei Wochen steht hier, was die nächsten Wochen und Monate ungefähr kosten.']);
+    return;
+  }
+  const nb = ' ';
+  const eur = (n) => '≈ ' + fKm(n) + '<small> €</small>';
+  const m1 = a.m1, m2 = a.m2;
+  const items = [
+    [m1.name, eur(m1.gesamt), 'bisher ' + fKm(m1.bisher) + nb + '€' + (m1.tage === 0 ? '' : m1.reicht ? ' · Tank reicht bis' + nb + dm(m1.ende) : ' · bis' + nb + dm(m1.ende) + ' ≈' + nb + '+' + fKm(m1.rest) + nb + '€')],
+    [m2.name, eur(m2.betrag), m2.stopps ? '≈' + nb + fKm(m2.liter) + nb + 'l · ≈' + nb + anzahl(m2.stopps, 'Tankstopp', 'Tankstopps') : 'Tank reicht laut Rechnung'],
+    ['Aufs Jahr', eur(Math.round(a.jahr.betrag / 10) * 10), 'Fahrleistung ≈' + nb + fKm(Math.round(a.jahr.km / 100) * 100) + nb + 'km'],
+    ['10 ct/l weniger', (a.hebel.monat < 1 ? '< 1' : '≈ ' + fKm(a.hebel.monat)) + '<small> € im Monat</small>', 'spart ≈' + nb + fKm(a.hebel.jahr) + nb + '€ im Jahr']
+  ];
+  dl.innerHTML = items.map(([dt, dd, sub]) =>
+    '<div class="stat"><dt>' + dt + '</dt><dd>' + dd + '<span class="sub">' + sub + '</span></dd></div>').join('');
+  dl.hidden = false;
+  info.innerHTML = (a.rabatt
+    ? '<li class="ab-wichtig">Ab 1.' + nb + 'Januar ohne Tankrabatt: rechnerisch bis zu 17' + nb + 'ct/l mehr, für dich bis zu ' + fKm(a.rabatt.monat) + nb + '€ im Monat. Oben ist das ab Januar eingerechnet.</li>'
+    : '') + linien([
+    'Rechnung: ' + nf1.format(a.rate) + nb + 'km pro Tag im Schnitt seit ' + dmy(a.seit) + ', ' + nf2.format(a.verbrauch) + nb + 'l/100' + nb + 'km und ' + fPreis(a.preis) + nb + '€ pro Liter wie beim letzten Tanken.' +
+      (a.mitTank ? ' Was bis zur Reserve noch im Tank ist, ist eingerechnet.' : '')
+  ]);
 }
 
 function renderLog(m) {
