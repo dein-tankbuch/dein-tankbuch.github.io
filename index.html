@@ -228,6 +228,42 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
 .ab-info .ab-wichtig{position:relative;padding-left:15px;color:var(--ink);font-size:14px;font-weight:500}
 .ab-info .ab-wichtig::before{content:"";position:absolute;left:0;top:.48em;width:7px;height:7px;border-radius:50%;background:var(--lamp)}
 </style>
+<style>
+/* Version 9: Grafiken. Säulen als HTML, Linie als SVG in echter Pixelgröße, Farben aus den Variablen oben (hell und dunkel) */
+.fig{position:relative;margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stats + .fig{margin-top:8px}
+.fig + .fig{margin-top:14px}
+.fig-kopf{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 14px;font-size:13px;color:var(--muted)}
+.fig-titel{font-weight:600;color:var(--ink)}
+.fig-key{display:inline-flex;flex-wrap:wrap;gap:4px 12px}
+.fig-key span{display:inline-flex;align-items:center;gap:5px}
+.fig-key i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.k-ist{background:var(--ink)}
+.k-prog{background:var(--lamp)}
+.saeulen{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);touch-action:pan-y}
+.saeule{display:flex;flex-direction:column;min-width:0;border-radius:6px;outline:none;-webkit-tap-highlight-color:transparent}
+.saeule:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+.s-plot{height:116px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;border-bottom:1px solid var(--line)}
+.s-wert{margin-bottom:3px;font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;color:var(--ink)}
+.s-teil{flex:none;width:min(24px,62%)}
+.s-teil.oben{border-radius:4px 4px 0 0}
+.s-ist{background:var(--ink)}
+.s-prog{background:var(--lamp)}
+.s-mon{padding-top:5px;text-align:center;font-size:12px;color:var(--muted);white-space:nowrap}
+.s-mon.jetzt{color:var(--ink);font-weight:600}
+.saeule.an .s-teil{opacity:.78}
+.fig-tip{position:absolute;z-index:2;left:0;top:0;margin:0;padding:6px 9px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:13px;line-height:1.35;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.fig-tip b{font-weight:600}
+.fig svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y;border-radius:6px;outline:none}
+.fig svg:focus-visible{box-shadow:0 0 0 2px var(--amber)}
+.p-gitter{stroke:var(--line);stroke-width:1}
+.p-achse{fill:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.p-linie{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.p-punkt{fill:var(--ink);stroke:var(--bg);stroke-width:2}
+.p-wert{fill:var(--ink);font-size:12px;font-weight:600}
+.p-kreuz{stroke:var(--muted);stroke-width:1}
+.p-fokus{fill:var(--lamp);stroke:var(--bg);stroke-width:2}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -431,6 +467,7 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
 
   <section aria-labelledby="h-ausblick">
     <h2 class="eyebrow" id="h-ausblick">Ausblick</h2>
+    <figure class="fig" id="fig-monate" hidden></figure>
     <dl class="stats ab" id="ausblick" hidden></dl>
     <ul class="ab-info" id="ausblick-info"></ul>
   </section>
@@ -438,6 +475,8 @@ input.aus-foto{border-color:var(--lamp);background:var(--lamp-soft)}
   <section aria-labelledby="h-stats">
     <h2 class="eyebrow" id="h-stats">Kennzahlen</h2>
     <dl class="stats" id="stats"></dl>
+    <figure class="fig" id="fig-preis" hidden></figure>
+    <figure class="fig" id="fig-zyklen" hidden></figure>
   </section>
 
   <section aria-labelledby="h-log">
@@ -691,6 +730,49 @@ function ausblick(m, heuteIso) {
   };
 }
 /*AUSBLICK-END*/
+/*GRAFIK-START*/
+/* Grafiken, Aufbereitung: liest nur die Ergebnisse von berechne() und ausblick() und ändert nichts daran.
+   Monate: höchstens vier volle Monate davor, der laufende Monat (getankt plus Rest laut Ausblick) und der nächste.
+   Ein erster Monat, der nach dem 7. beginnt, ist angefangen und fehlt. */
+const GR_MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+function grNach(ym, n) {
+  let [y, mo] = ym.split('-').map(Number);
+  mo += n; y += Math.floor((mo - 1) / 12); mo = ((mo - 1) % 12 + 12) % 12 + 1;
+  return y + '-' + String(mo).padStart(2, '0');
+}
+function grMonate(m, a, heuteIso) {
+  if (!a || !a.ok) return null;
+  const jetzt = heuteIso.slice(0, 7);
+  const erster = m.fills.reduce((x, f) => (f.datum < x ? f.datum : x), m.fills[0].datum);
+  let von = erster.slice(0, 7);
+  if (Number(erster.slice(8, 10)) > 7 && von < jetzt) von = grNach(von, 1);
+  if (von < grNach(jetzt, -4)) von = grNach(jetzt, -4);
+  const reihe = [];
+  for (let ym = von; ym <= jetzt; ym = grNach(ym, 1)) {
+    const fs = m.fills.filter((f) => f.datum.slice(0, 7) === ym && f.datum <= heuteIso);
+    reihe.push({ ym, ist: fs.reduce((s, f) => s + f.betrag, 0), prog: 0, stopps: fs.length });
+  }
+  const akt = reihe[reihe.length - 1];
+  akt.prog = a.m1.rest; akt.aktuell = true;
+  reihe.push({ ym: grNach(jetzt, 1), ist: 0, prog: a.m2.betrag, liter: a.m2.liter, stopps: a.m2.stopps, naechster: true });
+  return reihe;
+}
+function grPreise(m) {
+  const f = m.fills.filter((x) => x.betrag > 0)
+    .sort((a, b) => (a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : a.km - b.km));
+  if (f.length < 2) return null;
+  const ab = plusTage(f[f.length - 1].datum, -365);
+  const p = f.filter((x) => x.datum >= ab).map((x) => ({ datum: x.datum, preis: x.betrag / x.liter, liter: x.liter }));
+  return p.length >= 2 && p[0].datum < p[p.length - 1].datum ? p : null;
+}
+function grZyklen(m) {
+  if (m.zyklen.length < 2) return null;
+  return m.zyklen.slice(-8).map((z) => {
+    const f = m.fills.find((x) => x.km >= z.bis.km);
+    return { wert: z.verbrauch, km: z.km, liter: z.liter, bisKm: z.bis.km, datum: z.bis.datum || (f ? f.datum : null), genau: !!z.bis.datum };
+  });
+}
+/*GRAFIK-END*/
 /*FOTO-START*/
 /* Auswertung von Fotos (Quittung, Tacho) und Plausibilitätsprüfung. Nur Text und Zahlen rein, Werte raus, kein Zugriff auf Seite oder Speicher. */
 const FOTO_TOLERANZ = 0.05, PREIS_MIN = 1.2, PREIS_MAX = 3, KM_SPRUNG = 2000;
@@ -1097,7 +1179,7 @@ function entfernen(coll, id, msgId) {
 
 function render() {
   const m = berechne(rohT.filter(okFill), rohL.filter(okLamp), jetztKm, heute());
-  renderMeta(m); renderHero(m); renderAusblick(m); renderStats(m); renderLog(m); renderDaten();
+  renderMeta(m); renderHero(m); const a = renderAusblick(m); renderStats(m); renderGrafiken(m, a); renderLog(m); renderDaten();
 }
 
 function renderMeta(m) {
@@ -1244,7 +1326,7 @@ function renderAusblick(m) {
       ? 'Dein letzter Eintrag ist ' + a.tage + ' Tage alt. Trag ' + ($('now').hidden ? '' : 'oben den Km-Stand von heute oder ') + 'den nächsten Tankstopp ein, dann rechnet der Ausblick wieder.'
       : a.grund === 'kurz' ? 'Für den Ausblick braucht es Einträge über mindestens zwei Wochen.'
         : 'Ab zwei Tankstopps über mindestens zwei Wochen steht hier, was die nächsten Wochen und Monate ungefähr kosten.']);
-    return;
+    return a;
   }
   const nb = ' ';
   const eur = (n) => '≈ ' + fKm(n) + '<small> €</small>';
@@ -1264,7 +1346,178 @@ function renderAusblick(m) {
     'Rechnung: ' + nf1.format(a.rate) + nb + 'km pro Tag im Schnitt seit ' + dmy(a.seit) + ', ' + nf2.format(a.verbrauch) + nb + 'l/100' + nb + 'km und ' + fPreis(a.preis) + nb + '€ pro Liter wie beim letzten Tanken.' +
       (a.mitTank ? ' Was bis zur Reserve noch im Tank ist, ist eingerechnet.' : '')
   ]);
+  return a;
 }
+
+/* Grafiken, Darstellung. Werte stehen an den Säulen und am Linienende; Antippen, Zeigen oder Pfeiltasten zeigen Details. */
+let grPreisDaten = null, grPreisBreite = 0;
+function grTip(fig, html, x, y) {
+  const tip = fig.querySelector('.fig-tip');
+  tip.innerHTML = html; tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.max(0, Math.min(fig.clientWidth - w, x - w / 2)) + 'px';
+  tip.style.top = Math.max(0, y - h - 8) + 'px';
+}
+function grTipWeg(fig) {
+  const tip = fig.querySelector('.fig-tip'); if (tip) tip.hidden = true;
+  fig.querySelectorAll('.saeule.an').forEach((s) => s.classList.remove('an'));
+  if (fig.id === 'fig-preis') preisFokus(null);
+}
+function grKopf(titel, key) {
+  return '<figcaption class="fig-kopf"><span class="fig-titel">' + titel + '</span>' + (key ? '<span class="fig-key">' + key + '</span>' : '') + '</figcaption>';
+}
+function zeichneSaeulen(fig, kopf, spalten) {
+  const H = 88;
+  const max = Math.max(1e-9, ...spalten.map((s) => s.teile.reduce((x, t) => x + t.wert, 0)));
+  fig.innerHTML = kopf + '<div class="saeulen">' + spalten.map((s, i) => {
+    const teile = s.teile.filter((t) => t.wert > 0);
+    const summe = teile.reduce((x, t) => x + t.wert, 0);
+    const hoch = summe > 0 ? Math.max(3, summe / max * H) - 2 * (teile.length - 1) : 0;
+    return '<div class="saeule" tabindex="0" role="img" data-i="' + i + '" aria-label="' + esc(s.aria) + '"><div class="s-plot"><span class="s-wert">' + s.wert + '</span>' +
+      teile.map((t, j) => '<span class="s-teil ' + t.cls + (j === 0 ? ' oben' : '') + '" style="height:' + Math.max(2, hoch * t.wert / summe).toFixed(1) + 'px"></span>').join('') +
+      '</div><span class="s-mon' + (s.jetzt ? ' jetzt' : '') + '">' + s.unten + '</span></div>';
+  }).join('') + '</div><p class="fig-tip" hidden></p>';
+  fig.grSpalten = spalten;
+  fig.hidden = false;
+  if (fig.grAn) return;
+  fig.grAn = true;
+  const zeig = (el) => {
+    fig.querySelectorAll('.saeule.an').forEach((s) => s.classList.remove('an'));
+    el.classList.add('an');
+    const fr = fig.getBoundingClientRect(), r = el.querySelector('.s-wert').getBoundingClientRect();
+    grTip(fig, fig.grSpalten[el.dataset.i].tip, r.left - fr.left + r.width / 2, r.top - fr.top);
+  };
+  const ziel = (e) => e.target.closest && e.target.closest('.saeule');
+  fig.addEventListener('pointerover', (e) => { const el = ziel(e); if (el) zeig(el); });
+  fig.addEventListener('click', (e) => { const el = ziel(e); if (el) zeig(el); });
+  fig.addEventListener('focusin', (e) => { const el = ziel(e); if (el) zeig(el); });
+  fig.addEventListener('focusout', () => grTipWeg(fig));
+  fig.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') grTipWeg(fig); });
+}
+function renderMonate(m, a) {
+  const fig = $('fig-monate'), r = grMonate(m, a, heute());
+  if (!r) { fig.hidden = true; fig.innerHTML = ''; return; }
+  const nb = ' ';
+  zeichneSaeulen(fig, grKopf('Spritkosten je Monat (€)', '<span><i class="k-ist"></i>getankt</span><span><i class="k-prog"></i>Prognose</span>'), r.map((x) => {
+    const name = AB_MONATE[Number(x.ym.slice(5, 7)) - 1], gesamt = x.ist + x.prog;
+    const ca = x.prog >= 0.5 ? '≈' + nb : '';
+    return {
+      teile: [{ wert: x.prog, cls: 's-prog' }, { wert: x.ist, cls: 's-ist' }],
+      wert: ca + fKm(gesamt),
+      unten: GR_MON[Number(x.ym.slice(5, 7)) - 1],
+      jetzt: !!x.aktuell,
+      aria: name + ': ' + (x.naechster ? 'Prognose etwa ' + fKm(x.prog) + ' Euro' : fKm(x.ist) + ' Euro getankt' + (x.aktuell ? ', bis Monatsende etwa ' + fKm(x.prog) + ' Euro dazu' : '')),
+      tip: '<b>' + name + '</b> ' + (x.naechster
+        ? (x.stopps ? '≈' + nb + fKm(x.prog) + nb + '€ · ≈' + nb + fKm(x.liter) + nb + 'l · ≈' + nb + anzahl(x.stopps, 'Tankstopp', 'Tankstopps') : 'Tank reicht laut Rechnung')
+        : fKm(x.ist) + nb + '€ getankt' + (x.aktuell ? ' · Rest ≈' + nb + fKm(x.prog) + nb + '€' : ' · ' + anzahl(x.stopps, 'Tankstopp', 'Tankstopps')))
+    };
+  }));
+}
+function renderZyklen(m) {
+  const fig = $('fig-zyklen'), z = grZyklen(m);
+  if (!z) { fig.hidden = true; fig.innerHTML = ''; return; }
+  const nb = ' ';
+  zeichneSaeulen(fig, grKopf('Verbrauch je Reserve-Zyklus (l/100 km)', ''), z.map((x, i) => {
+    const bis = x.datum ? (x.genau ? '' : 'ca. ') + dmy(x.datum) : 'Reserve bei ' + fKm(x.bisKm) + nb + 'km';
+    return {
+      teile: [{ wert: x.wert, cls: 's-ist' }],
+      wert: nf1.format(x.wert),
+      unten: x.datum ? dm(x.datum) : '–',
+      jetzt: i === z.length - 1,
+      aria: 'Zyklus bis ' + bis + ': ' + nf2.format(x.wert) + ' Liter je 100 Kilometer, ' + nfL.format(x.liter) + ' Liter auf ' + fKm(x.km) + ' Kilometer',
+      tip: '<b>bis ' + bis + '</b> ' + nf2.format(x.wert) + nb + 'l/100' + nb + 'km · ' + fL(x.liter) + ' auf ' + fKm(x.km) + nb + 'km'
+    };
+  }));
+}
+function preisFokus(i) {
+  const fig = $('fig-preis'), svg = fig.querySelector('svg');
+  if (!svg || !grPreisDaten) return;
+  const kreuz = svg.querySelector('.p-kreuz'), punkt = svg.querySelector('.p-fokus');
+  if (i == null) { kreuz.style.display = 'none'; punkt.style.display = 'none'; svg.grI = null; return; }
+  const q = svg.grPunkte[i], p = grPreisDaten[i];
+  svg.grI = i;
+  kreuz.setAttribute('x1', q.x); kreuz.setAttribute('x2', q.x); kreuz.style.display = '';
+  punkt.setAttribute('cx', q.x); punkt.setAttribute('cy', q.y); punkt.style.display = '';
+  grTip(fig, '<b>' + dmy(p.datum) + '</b> ' + fPreis(p.preis) + ' €/l · ' + fL(p.liter), q.x, q.y + svg.getBoundingClientRect().top - fig.getBoundingClientRect().top - 4);
+}
+function zeichnePreis() {
+  const fig = $('fig-preis'), p = grPreisDaten;
+  const W = Math.round(fig.clientWidth);
+  if (!p || W < 120) return;
+  grPreisBreite = W;
+  const H = 140, pl = 34, pr = 40, pt = 18, pb = 24, iw = W - pl - pr, ih = H - pt - pb;
+  const t0 = ms(p[0].datum), t1 = ms(p[p.length - 1].datum);
+  const werte = p.map((x) => x.preis);
+  const lo = Math.min(...werte), hi = Math.max(...werte);
+  let st = hi - lo > 0.6 ? 20 : hi - lo > 0.2 ? 10 : 5;
+  let c0 = Math.floor(lo * 100 / st) * st, c1 = Math.ceil(hi * 100 / st) * st;
+  if (c1 === c0) c1 = c0 + st;
+  while ((c1 - c0) / st > 4) { st *= 2; c0 = Math.floor(lo * 100 / st) * st; c1 = Math.ceil(hi * 100 / st) * st; }
+  const X = (d) => pl + (ms(d) - t0) / (t1 - t0) * iw;
+  const Y = (v) => pt + (c1 / 100 - v) / ((c1 - c0) / 100) * ih;
+  const pts = p.map((x) => ({ x: +X(x.datum).toFixed(1), y: +Y(x.preis).toFixed(1) }));
+  let g = '';
+  for (let c = c0; c <= c1; c += st) {
+    const y = Y(c / 100).toFixed(1);
+    g += '<line class="p-gitter" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/><text class="p-achse" x="0" y="' + (+y + 4) + '">' + nf2.format(c / 100) + '</text>';
+  }
+  // Monatsanfänge als Achse, sonst erstes und letztes Datum
+  let ax = '', letzt = -1e9;
+  for (let ym = grNach(p[0].datum.slice(0, 7), 1); ms(ym + '-01') <= t1; ym = grNach(ym, 1)) {
+    const x = X(ym + '-01');
+    if (x - letzt < 30 || x > W - pr - 8) continue;
+    ax += '<text class="p-achse" x="' + x.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + GR_MON[Number(ym.slice(5, 7)) - 1] + '</text>';
+    letzt = x;
+  }
+  if (!ax) ax = '<text class="p-achse" x="' + pl + '" y="' + (H - 6) + '">' + dm(p[0].datum) + '</text><text class="p-achse" x="' + (W - pr) + '" y="' + (H - 6) + '" text-anchor="end">' + dm(p[p.length - 1].datum) + '</text>';
+  const n = p.length - 1;
+  const iMax = werte.indexOf(hi), iMin = werte.indexOf(lo);
+  let wl = '<text class="p-wert" x="' + (pts[n].x + 8) + '" y="' + (pts[n].y + 4) + '">' + nf2.format(werte[n]) + '</text>';
+  const lab = (i, oben) => '<text class="p-wert" x="' + Math.min(W - pr - 14, Math.max(pl + 14, pts[i].x)).toFixed(1) + '" y="' + (oben ? pts[i].y - 9 : pts[i].y + 18).toFixed(1) + '" text-anchor="middle">' + nf2.format(werte[i]) + '</text>';
+  if (iMax !== n) wl += lab(iMax, true);
+  if (iMin !== n && iMin !== iMax && pts[iMin].y + 18 < H - pb - 2) wl += lab(iMin, false);
+  const dots = p.length <= 24 ? pts.map((q) => '<circle class="p-punkt" cx="' + q.x + '" cy="' + q.y + '" r="4"/>').join('') : '<circle class="p-punkt" cx="' + pts[n].x + '" cy="' + pts[n].y + '" r="4"/>';
+  const aria = 'Literpreis je Tankstopp vom ' + dmy(p[0].datum) + ' bis ' + dmy(p[n].datum) + ': zuletzt ' + nf2.format(werte[n]) + ' Euro, höchster ' + nf2.format(hi) + ', niedrigster ' + nf2.format(lo) + '. Pfeiltasten zeigen die einzelnen Tankstopps.';
+  fig.innerHTML = grKopf('Literpreis je Tankstopp (€)', '') +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(aria) + '">' + g + ax +
+    '<line class="p-kreuz" x1="0" x2="0" y1="' + pt + '" y2="' + (H - pb) + '" style="display:none"/>' +
+    '<polyline class="p-linie" points="' + pts.map((q) => q.x + ',' + q.y).join(' ') + '"/>' + dots + wl +
+    '<circle class="p-fokus" r="5" cx="0" cy="0" style="display:none"/></svg><p class="fig-tip" hidden></p>';
+  const svg = fig.querySelector('svg');
+  svg.grPunkte = pts;
+  const naechster = (e) => {
+    const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width;
+    let b = 0; pts.forEach((q, i) => { if (Math.abs(q.x - x) < Math.abs(pts[b].x - x)) b = i; });
+    return b;
+  };
+  svg.addEventListener('pointermove', (e) => preisFokus(naechster(e)));
+  svg.addEventListener('pointerdown', (e) => preisFokus(naechster(e)));
+  svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') grTipWeg(fig); });
+  svg.addEventListener('focus', () => preisFokus(svg.grI != null ? svg.grI : n));
+  svg.addEventListener('blur', () => grTipWeg(fig));
+  svg.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Escape') return;
+    e.preventDefault();
+    if (e.key === 'Escape') { grTipWeg(fig); return; }
+    const i = svg.grI != null ? svg.grI : n;
+    preisFokus(Math.max(0, Math.min(n, i + (e.key === 'ArrowRight' ? 1 : -1))));
+  });
+}
+function renderPreis(m) {
+  const fig = $('fig-preis');
+  grPreisDaten = grPreise(m);
+  if (!grPreisDaten) { fig.hidden = true; fig.innerHTML = ''; return; }
+  fig.hidden = false;
+  zeichnePreis();
+}
+function renderGrafiken(m, a) {
+  renderMonate(m, a); renderPreis(m); renderZyklen(m);
+}
+// Linie bei neuer Breite neu zeichnen (Drehen, Fenstergröße), Details beim Tippen außerhalb schließen
+if (window.ResizeObserver) new ResizeObserver(() => { if (grPreisDaten && Math.round($('fig-preis').clientWidth) !== grPreisBreite) zeichnePreis(); }).observe($('fig-preis'));
+document.addEventListener('pointerdown', (e) => {
+  document.querySelectorAll('.fig').forEach((f) => { if (!f.contains(e.target)) grTipWeg(f); });
+});
 
 function renderLog(m) {
   const ul = $('log');
